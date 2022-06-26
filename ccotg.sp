@@ -33,6 +33,7 @@ enum
 
 bool g_bTF2Items;
 bool g_bTFEconData;
+bool g_bHasRobotArm[MAXPLAYERS];
 bool g_bInRespawnRoom[MAXPLAYERS];
 
 float g_flLastClassChange[MAXPLAYERS];
@@ -59,6 +60,7 @@ ConVar g_cvDisableCosmetics;
 ConVar g_cvOnlyAllowTeam;
 
 #include "ccotg/convars.sp"
+#include "ccotg/events.sp"
 #include "ccotg/sdkcalls.sp"
 #include "ccotg/sdkhooks.sp"
 #include "ccotg/stocks.sp"
@@ -81,6 +83,7 @@ public void OnPluginStart()
 	AddCommandListener(CommandListener_JoinClass, "join_class");
 	
 	ConVar_Init();
+	Event_Init();
 	SDKCall_Init();
 	
 	Enable();
@@ -99,6 +102,7 @@ public void OnMapStart()
 
 public void OnClientPutInServer(int iClient)
 {
+	g_bHasRobotArm[iClient] = false;
 	g_bInRespawnRoom[iClient] = false;
 	g_flLastClassChange[iClient] = GetGameTime();
 }
@@ -213,12 +217,15 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	{
 		// Give him the the "mod wrench builds minisentry" attribute (before changing classes) to prevent a server crash related to specifically the Sniper's viewmodel
 		TF2Attrib_SetByName(iClient, "mod wrench builds minisentry", 1.0);
+		g_bHasRobotArm[iClient] = true;
+		
 		CPrintToChat(iClient, "{red}Your Sniper weapons were made invisible to prevent server crashes. Apologies for the inconvenience.");
 	}
 	else
 	{
 		// (doing this doesn't have any effect on weapons with this attribute)
 		TF2Attrib_RemoveByName(iClient, "mod wrench builds minisentry");
+		g_bHasRobotArm[iClient] = false;
 	}
 	
 	// Get the player's current health now so it can be set properly after changing class
@@ -238,7 +245,7 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 			if (iWeapon > MaxClients)
 			{
 				SetEntityRenderMode(iWeapon, RENDER_TRANSCOLOR);
-				SetEntityRenderColor(iWeapon, 255, 255, 255, 0);
+				SetEntityRenderColor(iWeapon, _, _, _, 0);
 			}
 		}
 	}
@@ -286,7 +293,7 @@ public Action TF2Items_OnGiveNamedItem(int iClient, char[] sClassname, int iInde
 	// This is only used to block cosmetics, so we don't really care about class-specific slots
 	int iSlot = TF2Econ_GetItemDefaultLoadoutSlot(iIndex);
 	
-	// I'm pretty sure only LoadoutSlot_Misc is used, but just in case
+	// I'm pretty sure only LoadoutSlot_Misc is used for cosmetics, but just in case
 	if (iSlot == LoadoutSlot_Misc ||
 		iSlot == LoadoutSlot_Misc2 ||
 		iSlot == LoadoutSlot_Head)
