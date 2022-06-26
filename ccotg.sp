@@ -198,9 +198,9 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	{
 		// Don't allow randomness to pass the same class the player already is
 		// (god damn this looks like shit)
-		TFClassType nRandomClass = view_as<TFClassType>(GetRandomInt(view_as<int>(TFClass_Scout), view_as<int>(TFClass_Engineer)));
+		TFClassType nRandomClass = nCurrentClass;
 		
-		while (nCurrentClass == nRandomClass)
+		while (nRandomClass == nCurrentClass)
 			nRandomClass = view_as<TFClassType>(GetRandomInt(view_as<int>(TFClass_Scout), view_as<int>(TFClass_Engineer)));
 			
 		strcopy(sClass, sizeof(sClass), g_sClassNames[view_as<int>(nRandomClass)]);
