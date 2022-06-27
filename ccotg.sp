@@ -89,17 +89,6 @@ public void OnPluginStart()
 	Enable();
 }
 
-public void OnMapStart()
-{
-	// Set respawn room sdkhooks up here instead of OnEntityCreated so they work fine if the plugin is reloaded mid-game
-	int iEntity = MaxClients+1;
-	while ((iEntity = FindEntityByClassname(iEntity, "func_respawnroom")) > MaxClients)
-	{
-		SDKHook(iEntity, SDKHook_StartTouch, SDKHook_FuncRespawnRoom_StartTouch);
-		SDKHook(iEntity, SDKHook_EndTouch, SDKHook_FuncRespawnRoom_EndTouch);
-	}
-}
-
 public void OnClientPutInServer(int iClient)
 {
 	g_bHasRobotArm[iClient] = false;
@@ -130,16 +119,17 @@ public void Disable()
 	// ...so that won't be done. They'll be stuck with it until they rejoin or the map changes
 	
 	delete g_hAnnouncementTimer;
-	
-	// Unhook respawn rooms
-	int iEntity = MaxClients+1;
-	while ((iEntity = FindEntityByClassname(iEntity, "func_respawnroom")) > MaxClients)
+}
+
+public void OnEntityCreated(int iEntity, const char[] sClassname)
+{
+	if (StrEqual(sClassname, "func_respawnroom"))
 	{
-		SDKUnhook(iEntity, SDKHook_StartTouch, SDKHook_FuncRespawnRoom_StartTouch);
-		SDKUnhook(iEntity, SDKHook_EndTouch, SDKHook_FuncRespawnRoom_EndTouch);
+		SDKHook(iEntity, SDKHook_StartTouch, SDKHook_FuncRespawnRoom_StartTouch);
+		SDKHook(iEntity, SDKHook_EndTouch, SDKHook_FuncRespawnRoom_EndTouch);
 	}
 }
-	
+
 public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int iArgs)
 {
 	if (!g_cvEnabled.BoolValue)
@@ -197,7 +187,6 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	if (StrEqual(sClass, "random"))
 	{
 		// Don't allow randomness to pass the same class the player already is
-		// (god damn this looks like shit)
 		TFClassType nRandomClass = nCurrentClass;
 		
 		while (nRandomClass == nCurrentClass)
