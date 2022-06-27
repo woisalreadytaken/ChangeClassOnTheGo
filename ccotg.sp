@@ -207,8 +207,6 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 		// Give him the the "mod wrench builds minisentry" attribute (before changing classes) to prevent a server crash related to specifically the Sniper's viewmodel
 		TF2Attrib_SetByName(iClient, "mod wrench builds minisentry", 1.0);
 		g_bHasRobotArm[iClient] = true;
-		
-		CPrintToChat(iClient, "{red}Your Sniper weapons were made invisible to prevent server crashes. Apologies for the inconvenience.");
 	}
 	else
 	{
@@ -237,6 +235,8 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 				SetEntityRenderColor(iWeapon, _, _, _, 0);
 			}
 		}
+		
+		CPrintToChat(iClient, "{red}Your Sniper weapons were made invisible to prevent server crashes. Apologies for the inconvenience.");
 	}
 	
 	int iNewHealth = GetEntProp(iClient, Prop_Send, "m_iHealth");
