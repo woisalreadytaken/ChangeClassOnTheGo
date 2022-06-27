@@ -14,7 +14,7 @@ public Action Event_PlayerSpawn(Event event, const char[] sName, bool bDontBroad
 		return Plugin_Continue;
 	
 	// Remove gunslinger viewmodels given by the plugin if they spawn with it... and are not a Sniper
-	// Doing it this way fucks up animations for other classes if they die as sniper then switch while dead, but that's the only was I could find so far that doesn't have a server-crashing side effect
+	// Doing it this way fucks up animations for other classes if they die as sniper then switch while dead, but that's the only way I could find so far that doesn't have a server-crashing side effect
 	TF2Attrib_RemoveByName(iClient, "mod wrench builds minisentry");
 	g_bHasRobotArm[iClient] = false;
 	
