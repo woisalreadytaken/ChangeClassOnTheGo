@@ -58,6 +58,7 @@ ConVar g_cvAnnouncementTimer;
 ConVar g_cvCooldown;
 ConVar g_cvDisableCosmetics;
 ConVar g_cvOnlyAllowTeam;
+ConVar g_cvPreventSwitchingDuringBadConditions;
 
 #include "ccotg/convars.sp"
 #include "ccotg/events.sp"
@@ -160,7 +161,7 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	
 	if (flTimeSinceLastChange < flCooldown)
 	{
-		CPrintToChat(iClient, "{red}You must wait {default}%.2fs {red}to change classes again.", (flCooldown - flTimeSinceLastChange));
+		CPrintToChat(iClient, "{red}You must wait {unique}%.2fs {red}to change classes again.", (flCooldown - flTimeSinceLastChange));
 		return Plugin_Handled;
 	}
 	
@@ -201,6 +202,20 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	if (nCurrentClass == nNewClass)
 		return Plugin_Handled;
 	
+	// Check for bad conds if the convar is set
+	if (g_cvPreventSwitchingDuringBadConditions.BoolValue)
+	{
+		// TFCond_RocketPack makes the looping woosh sound persist until you switch back to Pyro (or die)
+		if (TF2_IsPlayerInCondition(iClient, TFCond_RocketPack))
+		{
+			CPrintToChat(iClient, "{red}You can not switch classes while {unique}jetpacking{red}.");
+			return Plugin_Handled;
+		}
+	}
+	
+	// Switching classes while taunting makes players have no active weapon, so stop them
+	TF2_RemoveCondition(iClient, TFCond_Taunting);
+	
 	// i fucking hate the sniper :DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
 	if (nNewClass == TFClass_Sniper)
 	{
@@ -214,9 +229,6 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 		TF2Attrib_RemoveByName(iClient, "mod wrench builds minisentry");
 		g_bHasRobotArm[iClient] = false;
 	}
-	
-	// Switching classes while taunting makes players have no active weapon, so stop them
-	TF2_RemoveCondition(iClient, TFCond_Taunting);
 	
 	// Get the player's current health now so it can be set properly after changing class
 	int iOldHealth = GetEntProp(iClient, Prop_Send, "m_iHealth");
