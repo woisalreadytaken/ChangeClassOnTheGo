@@ -215,6 +215,9 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 		g_bHasRobotArm[iClient] = false;
 	}
 	
+	// Switching classes while taunting makes players have no active weapon, so stop them
+	TF2_RemoveCondition(iClient, TFCond_Taunting);
+	
 	// Get the player's current health now so it can be set properly after changing class
 	int iOldHealth = GetEntProp(iClient, Prop_Send, "m_iHealth");
 	
@@ -249,21 +252,6 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	else if (iOldHealth > iMaxHealth) // Don't let players be overhealed by the previous class' higher health
 	{
 		SetEntProp(iClient, Prop_Send, "m_iHealth", iMaxHealth);
-	}
-	
-	// Switching classes while taunting makes players have no active weapon, so give them one
-	if (TF2_IsPlayerInCondition(iClient, TFCond_Taunting))
-	{
-		// Make it a melee weapon because players are supposed to always have one
-		int iWeapon = GetPlayerWeaponSlot(iClient, TFWeaponSlot_Melee);
-		if (iWeapon > MaxClients)
-		{
-			char sWeaponClassname[32];
-			GetEntityClassname(iWeapon, sWeaponClassname, sizeof(sWeaponClassname));
-			
-			TF2_RemoveCondition(iClient, TFCond_Taunting);
-			FakeClientCommand(iClient, "use %s", sWeaponClassname);
-		}
 	}
 	
 	g_flLastClassChange[iClient] = flTime;
