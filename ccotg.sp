@@ -33,14 +33,14 @@ enum
 
 bool g_bTF2Items;
 bool g_bTFEconData;
-bool g_bHasRobotArm[MAXPLAYERS];
-bool g_bInRespawnRoom[MAXPLAYERS];
+bool g_bHasRobotArm[MAXPLAYERS + 1];
+bool g_bInRespawnRoom[MAXPLAYERS + 1];
 
-float g_flLastClassChange[MAXPLAYERS];
+float g_flLastClassChange[MAXPLAYERS + 1];
 
 Handle g_hAnnouncementTimer;
 
-char g_sClassNames[view_as<int>(TFClass_Engineer)+1][] = {
+char g_sClassNames[view_as<int>(TFClass_Engineer) + 1][] = {
 	"random",
 	"scout",
 	"sniper",
