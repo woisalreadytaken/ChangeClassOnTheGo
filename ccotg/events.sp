@@ -10,13 +10,13 @@ public Action Event_PlayerSpawn(Event event, const char[] sName, bool bDontBroad
 		
 	int iClient = GetClientOfUserId(event.GetInt("userid"));
 	
-	if (!IsValidClient(iClient) || TF2_GetClientTeam(iClient) <= TFTeam_Spectator || TF2_GetPlayerClass(iClient) == TFClass_Sniper || !g_bHasRobotArm[iClient])
+	if (!IsValidClient(iClient) || TF2_GetClientTeam(iClient) <= TFTeam_Spectator || TF2_GetPlayerClass(iClient) == TFClass_Sniper || !Player(iClient).bHasRobotArm)
 		return Plugin_Continue;
 	
 	// Remove gunslinger viewmodels given by the plugin if they spawn with it... and are not a Sniper
 	// Doing it this way fucks up animations for other classes if they die as sniper then switch while dead, but that's the only way I could find so far that doesn't have a server-crashing side effect
 	TF2Attrib_RemoveByName(iClient, "mod wrench builds minisentry");
-	g_bHasRobotArm[iClient] = false;
+	Player(iClient).bHasRobotArm = false;
 	
 	for (int i = TFWeaponSlot_Primary; i <= TFWeaponSlot_Melee; i++)
 	{

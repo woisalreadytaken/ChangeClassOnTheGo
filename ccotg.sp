@@ -33,10 +33,6 @@ enum
 
 bool g_bTF2Items;
 bool g_bTFEconData;
-bool g_bHasRobotArm[MAXPLAYERS + 1];
-bool g_bInRespawnRoom[MAXPLAYERS + 1];
-
-float g_flLastClassChange[MAXPLAYERS + 1];
 
 Handle g_hAnnouncementTimer;
 
@@ -62,6 +58,7 @@ ConVar g_cvPreventSwitchingDuringBadConditions;
 
 #include "ccotg/convars.sp"
 #include "ccotg/events.sp"
+#include "ccotg/methodmaps.sp"
 #include "ccotg/sdkcalls.sp"
 #include "ccotg/sdkhooks.sp"
 #include "ccotg/stocks.sp"
@@ -92,9 +89,7 @@ public void OnPluginStart()
 
 public void OnClientPutInServer(int iClient)
 {
-	g_bHasRobotArm[iClient] = false;
-	g_bInRespawnRoom[iClient] = false;
-	g_flLastClassChange[iClient] = GetGameTime();
+	Player(iClient).Reset();
 }
 
 public void OnPluginEnd()
@@ -139,7 +134,7 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	if (!IsValidClient(iClient) || !IsPlayerAlive(iClient))
 		return Plugin_Continue;
 	
-	if (g_bInRespawnRoom[iClient] || GameRules_GetRoundState() == RoundState_Preround)
+	if (Player(iClient).bIsInRespawnRoom || GameRules_GetRoundState() == RoundState_Preround)
 		return Plugin_Continue;
 		
 	TFTeam nTeam = TF2_GetClientTeam(iClient);
@@ -156,7 +151,7 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	}
 	
 	float flTime = GetGameTime();
-	float flTimeSinceLastChange = flTime - g_flLastClassChange[iClient];
+	float flTimeSinceLastChange = flTime - Player(iClient).flLastClassChange;
 	float flCooldown = g_cvCooldown.FloatValue;
 	
 	if (flTimeSinceLastChange < flCooldown)
@@ -221,13 +216,13 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	{
 		// Give him the the "mod wrench builds minisentry" attribute (before changing classes) to prevent a server crash related to specifically the Sniper's viewmodel
 		TF2Attrib_SetByName(iClient, "mod wrench builds minisentry", 1.0);
-		g_bHasRobotArm[iClient] = true;
+		Player(iClient).bHasRobotArm = true;
 	}
 	else
 	{
 		// (doing this doesn't have any effect on weapons with this attribute)
 		TF2Attrib_RemoveByName(iClient, "mod wrench builds minisentry");
-		g_bHasRobotArm[iClient] = false;
+		Player(iClient).bHasRobotArm = false;
 	}
 	
 	// Get the player's current health now so it can be set properly after changing class
@@ -266,7 +261,7 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 		SetEntProp(iClient, Prop_Send, "m_iHealth", iMaxHealth);
 	}
 	
-	g_flLastClassChange[iClient] = flTime;
+	Player(iClient).flLastClassChange = flTime;
 	
 	return Plugin_Handled;
 }
