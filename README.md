@@ -1,7 +1,7 @@
 # Change Class on the Go
-description, unfinished. plugin, untested. we'll see!
-
 Scuffed pseudo-gamemode that allows everyone to change classes at will, anywhere.
+
+It has not been tested yet and may be super crusty. It also has planned features that are missing, such as ammo and charge meter management.
 
 ## Dependencies
 - SourceMod 1.11 (untested on 1.10, but should work)
