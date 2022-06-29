@@ -7,7 +7,7 @@ It has not been tested yet and may be super crusty. It also has planned features
 - SourceMod 1.11 (untested on 1.10, but should work)
 - [TF2Attributes](https://forums.alliedmods.net/showthread.php?t=210221)
 - [TF2 Econ Data](https://forums.alliedmods.net/showthread.php?t=315011)
-- [morecolors](https://forums.alliedmods.net/showthread.php?t=185016) (recompile only)
+- [More Colors](https://forums.alliedmods.net/showthread.php?t=185016) (compile only)
 
 Optional: [TF2Items](https://forums.alliedmods.net/showthread.php?p=1050170) to make use of `ccotg_disable_cosmetics`.
 
