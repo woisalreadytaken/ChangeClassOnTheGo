@@ -1,6 +1,8 @@
 # Change Class on the Go
 description, unfinished. plugin, untested. we'll see!
 
+Scuffed pseudo-gamemode that allows everyone to change classes at will, anywhere.
+
 ## Dependencies
 - SourceMod 1.11 (untested on 1.10, but should work)
 - [TF2Attributes](https://forums.alliedmods.net/showthread.php?t=210221)
