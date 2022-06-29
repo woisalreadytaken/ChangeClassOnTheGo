@@ -6,9 +6,10 @@ Scuffed pseudo-gamemode that allows everyone to change classes at will, anywhere
 ## Dependencies
 - SourceMod 1.11 (untested on 1.10, but should work)
 - [TF2Attributes](https://forums.alliedmods.net/showthread.php?t=210221)
+- [TF2 Econ Data](https://forums.alliedmods.net/showthread.php?t=315011)
 - [morecolors](https://forums.alliedmods.net/showthread.php?t=185016) (recompile only)
 
-Optional: [TF2 Econ Data](https://forums.alliedmods.net/showthread.php?t=315011) and [TF2Items](https://forums.alliedmods.net/showthread.php?p=1050170) to make use of `ccotg_disable_cosmetics`.
+Optional: [TF2Items](https://forums.alliedmods.net/showthread.php?p=1050170) to make use of `ccotg_disable_cosmetics`.
 
 ## ConVars
 Most restrictive ConVars will be disabled by default for the first time, will need to see how laggy it really is

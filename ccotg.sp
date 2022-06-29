@@ -4,11 +4,11 @@
 #include <tf2>
 #include <tf2_stocks>
 #include <tf2attributes>
+#include <tf_econ_data>
 #include <morecolors>
 
 #undef REQUIRE_EXTENSIONS
 #tryinclude <tf2items>
-#tryinclude <tf_econ_data>
 #define REQUIRE_EXTENSIONS
 
 #pragma semicolon 1
@@ -32,7 +32,6 @@ enum
 };
 
 bool g_bTF2Items;
-bool g_bTFEconData;
 
 Handle g_hAnnouncementTimer;
 Handle g_hBufferTimer[MAXPLAYERS + 1];
@@ -76,7 +75,6 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	g_bTF2Items = LibraryExists("TF2Items");
-	g_bTFEconData = LibraryExists("tf_econ_data");
 	
 	AddCommandListener(CommandListener_JoinClass, "joinclass");
 	AddCommandListener(CommandListener_JoinClass, "join_class");
