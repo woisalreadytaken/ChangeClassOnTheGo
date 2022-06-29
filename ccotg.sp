@@ -108,17 +108,44 @@ public void Enable()
 	}
 	
 	// More stuff for late loads
+	bool bLate = false;
+	
+	// Treat in-game clients as if they're joining (resets them)
 	for (int iClient = 1; iClient <= MaxClients; iClient++)
 	{
 		if (IsClientInGame(iClient))
+		{
 			OnClientPutInServer(iClient);
+			bLate = true;
+		}
 	}
+	
+	if (!bLate)
+		return;
+		
+	int iEntity = MaxClients + 1;
+	
+	// Hook spawn rooms
+	while ((iEntity = FindEntityByClassname(iEntity, "func_respawnroom")) > MaxClients)
+	{
+		SDKHook(iEntity, SDKHook_StartTouch, SDKHook_FuncRespawnRoom_StartTouch);
+		SDKHook(iEntity, SDKHook_EndTouch, SDKHook_FuncRespawnRoom_EndTouch);
+	}	
 }
 
 public void Disable()
 {
 	// Ideally we'd want to remove gunslinger viewmodels from snipers, but that still risks crashing the server (and client) if done mid-game lol!
 	// ...so that won't be done. They'll be stuck with it until they rejoin or the map changes
+	
+	int iEntity = MaxClients + 1;
+	
+	// Unhook spawn rooms
+	while ((iEntity = FindEntityByClassname(iEntity, "func_respawnroom")) > MaxClients)
+	{
+		SDKUnhook(iEntity, SDKHook_StartTouch, SDKHook_FuncRespawnRoom_StartTouch);
+		SDKUnhook(iEntity, SDKHook_EndTouch, SDKHook_FuncRespawnRoom_EndTouch);
+	}
 	
 	delete g_hAnnouncementTimer;
 }
