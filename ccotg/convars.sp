@@ -1,6 +1,6 @@
 void ConVar_Init()
 {
-	// Restriction ConVars will be disabled for initial testing, and may be enabled on the fly
+	// Most restriction ConVars will be disabled for initial testing, and may be enabled on the fly
 	g_cvEnabled = CreateConVar("ccotg_enabled", "1", "Is 'Change Class on the Go' enabled?", _, true, 0.0, true, 1.0);
 	g_cvEnabled.AddChangeHook(ConVar_EnabledChanged);
 	g_cvAnnouncementTimer = CreateConVar("ccotg_announcement_interval", "240.0", "Amount of time (in seconds!) taken for the main announcement message to be re-sent.");
@@ -9,7 +9,7 @@ void ConVar_Init()
 	g_cvDisableCosmetics = CreateConVar("ccotg_disable_cosmetics", "0", "Disallows players from equipping cosmetics, to lower the toll the server takes on class change. Depends on the TF2Items and TF Econ Data extensions!");
 	g_cvDisableCosmetics.AddChangeHook(ConVar_DisableCosmeticsChanged);
 	g_cvOnlyAllowTeam = CreateConVar("ccotg_only_allow_team", "", "Only allows the specified team to make use of this plugin's functionality. Accepts 'red' and 'blu(e)', anything else means we'll assume you're fine with both teams.");
-	g_cvPreventSwitchingDuringBadConditions = CreateConVar("ccotg_prevent_switching_during_bad_conditions", "0", "Lazy temporary beta convar - disallows switching classes if players have the following condition: TFCond_RocketPack (to prevent a persistent looping sound bug)");
+	g_cvPreventSwitchingDuringBadStates = CreateConVar("ccotg_prevent_switching_during_bad_states", "1", "Lazy temporary beta convar - disallows switching classes if are doing following: Jetpacking (to prevent a persistent looping sound bug) and hauling a building (does some bad animation stuff)");
 }
 
 void ConVar_EnabledChanged(ConVar convar, const char[] oldValue, const char[] newValue)

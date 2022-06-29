@@ -35,6 +35,7 @@ bool g_bTF2Items;
 bool g_bTFEconData;
 
 Handle g_hAnnouncementTimer;
+Handle g_hBufferTimer[MAXPLAYERS + 1];
 
 char g_sClassNames[view_as<int>(TFClass_Engineer) + 1][] = {
 	"random",
@@ -54,7 +55,7 @@ ConVar g_cvAnnouncementTimer;
 ConVar g_cvCooldown;
 ConVar g_cvDisableCosmetics;
 ConVar g_cvOnlyAllowTeam;
-ConVar g_cvPreventSwitchingDuringBadConditions;
+ConVar g_cvPreventSwitchingDuringBadStates;
 
 #include "ccotg/convars.sp"
 #include "ccotg/events.sp"
@@ -107,6 +108,13 @@ public void Enable()
 		CreateTimer(0.0, Timer_MainAnnouncement); // In case the plugin was loaded mid-game, display a message immediately
 		g_hAnnouncementTimer = CreateTimer(g_cvAnnouncementTimer.FloatValue, Timer_MainAnnouncement, _, TIMER_REPEAT);
 	}
+	
+	// More stuff for late loads
+	for (int iClient = 1; iClient <= MaxClients; iClient++)
+	{
+		if (IsClientInGame(iClient))
+			OnClientPutInServer(iClient);
+	}
 }
 
 public void Disable()
@@ -136,7 +144,7 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	
 	if (Player(iClient).bIsInRespawnRoom || GameRules_GetRoundState() == RoundState_Preround)
 		return Plugin_Continue;
-		
+	
 	TFTeam nTeam = TF2_GetClientTeam(iClient);
 	char sTeam[4];
 	g_cvOnlyAllowTeam.GetString(sTeam, sizeof(sTeam));
@@ -148,16 +156,6 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	else if (StrContains(sTeam, "blu", false) != -1 && nTeam != TFTeam_Blue)
 	{
 		return Plugin_Continue;
-	}
-	
-	float flTime = GetGameTime();
-	float flTimeSinceLastChange = flTime - Player(iClient).flLastClassChange;
-	float flCooldown = g_cvCooldown.FloatValue;
-	
-	if (flTimeSinceLastChange < flCooldown)
-	{
-		CPrintToChat(iClient, "{red}You must wait {unique}%.2fs {red}to change classes again.", (flCooldown - flTimeSinceLastChange));
-		return Plugin_Handled;
 	}
 	
 	char sClass[16];
@@ -192,77 +190,31 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	}
 	
 	TFClassType nNewClass = TF2_GetClass(sClass);
+	bool bSameClass = nNewClass == nCurrentClass;
 	
-	// Don't do anything if the same class was selected
-	if (nCurrentClass == nNewClass)
+	// Check for cooldown if the convar is set
+	if (Player(iClient).IsInCooldown(!bSameClass))
+	{
+		Player(iClient).nBufferedClass = nNewClass;
+			
+		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, iClient);
+		return Plugin_Handled;
+	}
+	
+	// Check for bad class switch state if the convar is set
+	if (Player(iClient).IsInBadState(!bSameClass))
+	{
+		Player(iClient).nBufferedClass = nNewClass;
+		
+		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, iClient);
+		return Plugin_Handled;
+	}
+	
+	// Don't do anything if the same class was re-selected
+	if (bSameClass)
 		return Plugin_Handled;
 	
-	// Check for bad conds if the convar is set
-	if (g_cvPreventSwitchingDuringBadConditions.BoolValue)
-	{
-		// TFCond_RocketPack makes the looping woosh sound persist until you switch back to Pyro (or die)
-		if (TF2_IsPlayerInCondition(iClient, TFCond_RocketPack))
-		{
-			CPrintToChat(iClient, "{red}You can not switch classes while {unique}jetpacking{red}.");
-			return Plugin_Handled;
-		}
-	}
-	
-	// Switching classes while taunting makes players have no active weapon, so stop them
-	TF2_RemoveCondition(iClient, TFCond_Taunting);
-	
-	// i fucking hate the sniper :DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
-	if (nNewClass == TFClass_Sniper)
-	{
-		// Give him the the "mod wrench builds minisentry" attribute (before changing classes) to prevent a server crash related to specifically the Sniper's viewmodel
-		TF2Attrib_SetByName(iClient, "mod wrench builds minisentry", 1.0);
-		Player(iClient).bHasRobotArm = true;
-	}
-	else
-	{
-		// (doing this doesn't have any effect on weapons with this attribute)
-		TF2Attrib_RemoveByName(iClient, "mod wrench builds minisentry");
-		Player(iClient).bHasRobotArm = false;
-	}
-	
-	// Get the player's current health now so it can be set properly after changing class
-	int iOldHealth = GetEntProp(iClient, Prop_Send, "m_iHealth");
-	
-	// Change classes!
-	TF2_SetPlayerClass(iClient, nNewClass, false, true);
-	TF2_RegeneratePlayer(iClient);
-	
-	// have i told you how much i fucking hate this class?
-	if (nNewClass == TFClass_Sniper)
-	{
-		// Hide all non-passive weapons (after changing classes), because the engi's hand is ugly to look at
-		for (int i = TFWeaponSlot_Primary; i <= TFWeaponSlot_Melee; i++)
-		{
-			int iWeapon = GetPlayerWeaponSlot(iClient, i);
-			if (iWeapon > MaxClients)
-			{
-				SetEntityRenderMode(iWeapon, RENDER_TRANSCOLOR);
-				SetEntityRenderColor(iWeapon, _, _, _, 0);
-			}
-		}
-		
-		CPrintToChat(iClient, "{red}Your Sniper weapons were made invisible to prevent server crashes. Apologies for the inconvenience.");
-	}
-	
-	int iNewHealth = GetEntProp(iClient, Prop_Send, "m_iHealth");
-	int iMaxHealth = SDKCall_GetMaxHealth(iClient);
-	
-	if (iOldHealth < iNewHealth) // Don't let players heal off switching classes
-	{
-		SetEntProp(iClient, Prop_Send, "m_iHealth", iOldHealth);
-	}
-	else if (iOldHealth > iMaxHealth) // Don't let players be overhealed by the previous class' higher health
-	{
-		SetEntProp(iClient, Prop_Send, "m_iHealth", iMaxHealth);
-	}
-	
-	Player(iClient).flLastClassChange = flTime;
-	
+	Player(iClient).SetClass(nNewClass);
 	return Plugin_Handled;
 }
 
@@ -286,9 +238,63 @@ public Action TF2Items_OnGiveNamedItem(int iClient, char[] sClassname, int iInde
 	return Plugin_Continue;
 }
 
-public Action Timer_MainAnnouncement(Handle timer)
+public Action Timer_MainAnnouncement(Handle hTimer)
 {
 	CPrintToChatAll("{olive}Change Class on the Go is active! You are free to change classes without respawning wherever you want.");
 	
 	return Plugin_Continue;
 }
+
+public Action Timer_DealWithBuffer(Handle hTimer, int iClient)
+{
+	if (hTimer != g_hBufferTimer[iClient] || !g_cvEnabled.BoolValue)
+		return Plugin_Continue;
+	
+	if (!IsValidClient(iClient))
+		return Plugin_Continue;
+		
+	TFClassType nClass = Player(iClient).nBufferedClass;
+	
+	// If the player has selected the class they already are, reset their buffer
+	if (nClass == TF2_GetPlayerClass(iClient))
+	{
+		CPrintToChat(iClient, "{green}You will no longer switch classes.");
+		
+		Player(iClient).nBufferedClass = TFClass_Unknown;
+		
+		return Plugin_Continue;
+	}
+	
+	// If the player is no longer alive, give them whatever they had chosen as their desired class and reset their buffer
+	if (!IsPlayerAlive(iClient))
+	{
+		SetEntProp(iClient, Prop_Send, "m_iDesiredPlayerClass", view_as<int>(nClass));
+		Player(iClient).nBufferedClass = TFClass_Unknown;
+		
+		return Plugin_Continue;
+	}
+	
+	// If the player is still on cooldown, keep doing this
+	if (Player(iClient).IsInCooldown(false))
+	{
+		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, iClient);
+		return Plugin_Continue;
+	}
+	
+	// If the player is still in a bad state, keep doing this
+	if (Player(iClient).IsInBadState(false))
+	{
+		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, iClient);
+	}
+	// If not, they should be clear to change classes
+	else
+	{
+		Player(iClient).SetClass(nClass);
+		
+		// ...and reset their stuff
+		Player(iClient).nBufferedClass = TFClass_Unknown;
+	}
+	
+	return Plugin_Continue;
+}
+	
