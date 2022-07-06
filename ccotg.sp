@@ -56,6 +56,7 @@ ConVar g_cvCooldown;
 ConVar g_cvDisableCosmetics;
 ConVar g_cvOnlyAllowTeam;
 ConVar g_cvPreventSwitchingDuringBadStates;
+ConVar g_cvMessWithArenaRoundStates;
 
 #include "ccotg/console.sp"
 #include "ccotg/convars.sp"
@@ -86,6 +87,11 @@ public void OnPluginStart()
 	Enable();
 }
 
+public void OnMapStart()
+{
+	Map_Enable();
+}
+
 public void OnClientPutInServer(int iClient)
 {
 	Player(iClient).Reset();
@@ -107,22 +113,16 @@ public void Enable()
 		g_hAnnouncementTimer = CreateTimer(g_cvAnnouncementTimer.FloatValue, Timer_MainAnnouncement, _, TIMER_REPEAT);
 	}
 	
-	// More stuff for late loads
-	bool bLate = false;
-	
 	// Treat in-game clients as if they're joining (resets them)
 	for (int iClient = 1; iClient <= MaxClients; iClient++)
 	{
 		if (IsClientInGame(iClient))
-		{
 			OnClientPutInServer(iClient);
-			bLate = true;
-		}
 	}
-	
-	if (!bLate)
-		return;
-	
+}
+
+public void Map_Enable()
+{
 	// Check if it's arena
 	if (FindEntityByClassname(-1, "tf_logic_arena") > MaxClients)
 	{
@@ -133,14 +133,17 @@ public void Enable()
 		g_bArenaMode = false;
 	}
 	
+	// Hook spawn rooms. We don't care about them if it's arena mode
+	if (g_bArenaMode)
+		return;
+		
 	int iEntity = MaxClients + 1;
 	
-	// Hook spawn rooms
 	while ((iEntity = FindEntityByClassname(iEntity, "func_respawnroom")) > MaxClients)
 	{
 		SDKHook(iEntity, SDKHook_StartTouch, SDKHook_FuncRespawnRoom_StartTouch);
 		SDKHook(iEntity, SDKHook_EndTouch, SDKHook_FuncRespawnRoom_EndTouch);
-	}	
+	}
 }
 
 public void Disable()
@@ -165,11 +168,7 @@ public void OnEntityCreated(int iEntity, const char[] sClassname)
 	if (!g_cvEnabled.BoolValue)
 		return;
 	
-	if (strcmp(sClassname, "tf_logic_arena") == 0)
-	{
-		g_bArenaMode = true;
-	}
-	else if (strcmp(sClassname, "func_respawnroom") == 0)
+	if (strcmp(sClassname, "func_respawnroom") == 0)
 	{
 		SDKHook(iEntity, SDKHook_StartTouch, SDKHook_FuncRespawnRoom_StartTouch);
 		SDKHook(iEntity, SDKHook_EndTouch, SDKHook_FuncRespawnRoom_EndTouch);

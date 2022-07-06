@@ -10,14 +10,21 @@ void ConVar_Init()
 	g_cvDisableCosmetics.AddChangeHook(ConVar_DisableCosmeticsChanged);
 	g_cvOnlyAllowTeam = CreateConVar("ccotg_only_allow_team", "", "Only allows the specified team to make use of this plugin's functionality. Accepts 'red' and 'blu(e)', anything else means we'll assume you're fine with both teams.");
 	g_cvPreventSwitchingDuringBadStates = CreateConVar("ccotg_prevent_switching_during_bad_states", "1", "Lazy temporary beta convar - disallows switching classes if are doing following: Jetpacking (to prevent a persistent looping sound bug) and hauling a building (does some bad animation stuff)");
+	g_cvMessWithArenaRoundStates = CreateConVar("ccotg_arena_change_round_states", "1", "Changes the round state in arena mode so players can use the default changeclass key mid round. Disable if this breaks anything, doing so will let players change classes with their 'dropitem' key instead.");
+	g_cvMessWithArenaRoundStates.AddChangeHook(ConVar_MessWithArenaRoundStatesChanged);
 }
 
 void ConVar_EnabledChanged(ConVar convar, const char[] oldValue, const char[] newValue)
 {
 	if (convar.BoolValue)
+	{
 		Enable();
+		Map_Enable();
+	}
 	else
+	{
 		Disable();
+	}
 }
 
 void ConVar_AnnouncementTimerChanged(ConVar convar, const char[] oldValue, const char[] newValue)
@@ -37,5 +44,23 @@ void ConVar_DisableCosmeticsChanged(ConVar convar, const char[] oldValue, const 
 	{
 		PrintToServer("The 'ccotg_disable_cosmetics' ConVar DEPENDS on the TF2Items extension which does not exist in this server. It has been AUTOMATICALLY DISABLED.");
 		g_cvDisableCosmetics.SetInt(0);
+	}
+}
+
+void ConVar_MessWithArenaRoundStatesChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	if (!g_bArenaMode)
+		return;
+	
+	// If we're enabling this, check if a round is running so we can change the round state to what we want
+	// RoundState_Stalemate is used for the main round in arena mode, idk valve kinda rarted
+	if (convar.BoolValue && GameRules_GetRoundState() == RoundState_Stalemate)
+	{
+		GameRules_SetProp("m_iRoundState", RoundState_RoundRunning);
+	}
+	// If we're disabling this, check if we're using the fucked up round state so we can change it back
+	else if (!convar.BoolValue && GameRules_GetRoundState() == RoundState_RoundRunning)
+	{
+		GameRules_SetProp("m_iRoundState", RoundState_Stalemate);
 	}
 }

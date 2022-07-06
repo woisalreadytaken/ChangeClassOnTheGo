@@ -10,7 +10,7 @@ public Action CommandListener_ChangeClass(int iClient, const char[] sCommand, in
 	if (!g_cvEnabled.BoolValue)
 		return Plugin_Continue;
 	
-	if (!g_bArenaMode)
+	if (!g_bArenaMode || g_cvMessWithArenaRoundStates.BoolValue)
 		return Plugin_Continue;
 	
 	if (!IsValidClient(iClient) || !IsPlayerAlive(iClient))
