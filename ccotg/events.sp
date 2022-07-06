@@ -1,6 +1,7 @@
 void Event_Init()
 {
 	HookEvent("player_spawn", Event_PlayerSpawn);
+	HookEvent("teamplay_round_start", Event_RoundStart);
 }
 
 public Action Event_PlayerSpawn(Event event, const char[] sName, bool bDontBroadcast)
@@ -27,6 +28,20 @@ public Action Event_PlayerSpawn(Event event, const char[] sName, bool bDontBroad
 			SetEntityRenderColor(iWeapon, _, _, _, 255);
 		}
 	}
+	
+	return Plugin_Continue;
+}
+
+public Action Event_RoundStart(Event event, const char[] sName, bool bDontBroadcast)
+{
+	if (!g_cvEnabled.BoolValue)
+		return Plugin_Continue;
+	
+	if (!g_bArenaMode)
+		return Plugin_Continue;
+		
+	// If it's arena mode, let players know they can open the class select menu... with a different key...
+	CPrintToChatAll("{olive}You can switch classes mid round by pressing your {yellow}'dropitem' {olive}key.");
 	
 	return Plugin_Continue;
 }

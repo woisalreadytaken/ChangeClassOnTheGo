@@ -31,6 +31,7 @@ enum
 	LoadoutSlot_Misc2
 };
 
+bool g_bArenaMode;
 bool g_bTF2Items;
 
 Handle g_hAnnouncementTimer;
@@ -56,6 +57,7 @@ ConVar g_cvDisableCosmetics;
 ConVar g_cvOnlyAllowTeam;
 ConVar g_cvPreventSwitchingDuringBadStates;
 
+#include "ccotg/console.sp"
 #include "ccotg/convars.sp"
 #include "ccotg/events.sp"
 #include "ccotg/methodmaps.sp"
@@ -76,9 +78,7 @@ public void OnPluginStart()
 {
 	g_bTF2Items = LibraryExists("TF2Items");
 	
-	AddCommandListener(CommandListener_JoinClass, "joinclass");
-	AddCommandListener(CommandListener_JoinClass, "join_class");
-	
+	Console_Init();
 	ConVar_Init();
 	Event_Init();
 	SDKCall_Init();
@@ -122,7 +122,17 @@ public void Enable()
 	
 	if (!bLate)
 		return;
-		
+	
+	// Check if it's arena
+	if (FindEntityByClassname(-1, "tf_logic_arena") > MaxClients)
+	{
+		g_bArenaMode = true;
+	}
+	else
+	{
+		g_bArenaMode = false;
+	}
+	
 	int iEntity = MaxClients + 1;
 	
 	// Hook spawn rooms
@@ -152,97 +162,20 @@ public void Disable()
 
 public void OnEntityCreated(int iEntity, const char[] sClassname)
 {
-	if (StrEqual(sClassname, "func_respawnroom"))
+	if (!g_cvEnabled.BoolValue)
+		return;
+	
+	if (strcmp(sClassname, "tf_logic_arena") == 0)
+	{
+		g_bArenaMode = true;
+	}
+	else if (strcmp(sClassname, "func_respawnroom") == 0)
 	{
 		SDKHook(iEntity, SDKHook_StartTouch, SDKHook_FuncRespawnRoom_StartTouch);
 		SDKHook(iEntity, SDKHook_EndTouch, SDKHook_FuncRespawnRoom_EndTouch);
 	}
 }
-
-public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int iArgs)
-{
-	if (!g_cvEnabled.BoolValue)
-		return Plugin_Continue;
 	
-	if (!IsValidClient(iClient) || !IsPlayerAlive(iClient))
-		return Plugin_Continue;
-	
-	if (Player(iClient).bIsInRespawnRoom || GameRules_GetRoundState() == RoundState_Preround)
-		return Plugin_Continue;
-	
-	TFTeam nTeam = TF2_GetClientTeam(iClient);
-	char sTeam[4];
-	g_cvOnlyAllowTeam.GetString(sTeam, sizeof(sTeam));
-	
-	if (StrContains(sTeam, "red", false) != -1 && nTeam != TFTeam_Red)
-	{
-		return Plugin_Continue;
-	}
-	else if (StrContains(sTeam, "blu", false) != -1 && nTeam != TFTeam_Blue)
-	{
-		return Plugin_Continue;
-	}
-	
-	char sClass[16];
-	GetCmdArg(1, sClass, sizeof(sClass));
-	StrToLower(sClass);
-	
-	// Check if the class typed is valid
-	bool bValidClass = false;
-	for (int i = view_as<int>(TFClass_Unknown); i <= view_as<int>(TFClass_Engineer); i++)
-	{
-		if (StrEqual(sClass, g_sClassNames[i]))
-		{
-			bValidClass = true;
-			break;
-		}
-	}
-	
-	if (!bValidClass)
-		return Plugin_Continue;
-	
-	TFClassType nCurrentClass = TF2_GetPlayerClass(iClient);
-	
-	if (StrEqual(sClass, "random"))
-	{
-		// Don't allow randomness to pass the same class the player already is
-		TFClassType nRandomClass = nCurrentClass;
-		
-		while (nRandomClass == nCurrentClass)
-			nRandomClass = view_as<TFClassType>(GetRandomInt(view_as<int>(TFClass_Scout), view_as<int>(TFClass_Engineer)));
-			
-		strcopy(sClass, sizeof(sClass), g_sClassNames[view_as<int>(nRandomClass)]);
-	}
-	
-	TFClassType nNewClass = TF2_GetClass(sClass);
-	bool bSameClass = nNewClass == nCurrentClass;
-	
-	// Check for cooldown if the convar is set
-	if (Player(iClient).IsInCooldown(!bSameClass))
-	{
-		Player(iClient).nBufferedClass = nNewClass;
-			
-		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, iClient);
-		return Plugin_Handled;
-	}
-	
-	// Check for bad class switch state if the convar is set
-	if (Player(iClient).IsInBadState(!bSameClass))
-	{
-		Player(iClient).nBufferedClass = nNewClass;
-		
-		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, iClient);
-		return Plugin_Handled;
-	}
-	
-	// Don't do anything if the same class was re-selected
-	if (bSameClass)
-		return Plugin_Handled;
-	
-	Player(iClient).SetClass(nNewClass);
-	return Plugin_Handled;
-}
-
 public Action TF2Items_OnGiveNamedItem(int iClient, char[] sClassname, int iIndex, Handle &hItem)
 {
 	if (!g_cvEnabled.BoolValue)
