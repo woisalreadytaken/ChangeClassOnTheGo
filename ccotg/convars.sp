@@ -11,7 +11,7 @@ void ConVar_Init()
 	g_cvOnlyAllowTeam = CreateConVar("ccotg_only_allow_team", "", "Only allows the specified team to make use of this plugin's functionality. Accepts 'red' and 'blu(e)', anything else means we'll assume you're fine with both teams.");
 	g_cvOnlyAllowTeam.AddChangeHook(ConVar_OnlyAllowTeamChanged);
 	g_cvPreventSwitchingDuringBadStates = CreateConVar("ccotg_prevent_switching_during_bad_states", "1", "Lazy temporary beta convar - disallows switching classes if are doing following: Jetpacking (to prevent a persistent looping sound bug) and hauling a building (does some bad animation stuff)");
-	g_cvMessWithArenaRoundStates = CreateConVar("ccotg_arena_change_round_states", "1", "Changes the round state in arena mode so players can use the default changeclass key mid round. Disable if this breaks anything, doing so will let players change classes with their 'dropitem' key instead.");
+	g_cvMessWithArenaRoundStates = CreateConVar("ccotg_arena_change_round_states", "0", "Changes the round state in arena mode so players can use the default changeclass key mid round. Breaks the central Control Point! Disabling will let players change classes with their 'dropitem' key instead.");
 	g_cvMessWithArenaRoundStates.AddChangeHook(ConVar_MessWithArenaRoundStatesChanged);
 }
 
