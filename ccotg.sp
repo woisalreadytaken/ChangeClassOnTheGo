@@ -37,6 +37,8 @@ bool g_bTF2Items;
 Handle g_hAnnouncementTimer;
 Handle g_hBufferTimer[MAXPLAYERS + 1];
 
+TFTeam g_nTeamThatIsAllowedToChangeClass;
+
 char g_sClassNames[view_as<int>(TFClass_Engineer) + 1][] = {
 	"random",
 	"scout",
@@ -119,6 +121,23 @@ public void Enable()
 		if (IsClientInGame(iClient))
 			OnClientPutInServer(iClient);
 	}
+	
+	// Check if the convar for only allowing one team to switch is modified
+	char sTeam[8];
+	g_cvOnlyAllowTeam.GetString(sTeam, sizeof(sTeam));
+	
+	if (StrContains(sTeam, "red", false) != -1)
+	{
+		g_nTeamThatIsAllowedToChangeClass = TFTeam_Red;
+	}
+	else if (StrContains(sTeam, "blu", false) != -1)
+	{
+		g_nTeamThatIsAllowedToChangeClass = TFTeam_Blue;
+	}
+	else
+	{
+		g_nTeamThatIsAllowedToChangeClass = TFTeam_Unassigned;
+	}
 }
 
 public void Map_Enable()
@@ -197,7 +216,17 @@ public Action TF2Items_OnGiveNamedItem(int iClient, char[] sClassname, int iInde
 
 public Action Timer_MainAnnouncement(Handle hTimer)
 {
-	CPrintToChatAll("{olive}Change Class on the Go is active! You are free to change classes without respawning wherever you want.");
+	for (int iClient = 1; iClient <= MaxClients; iClient++)
+	{
+		if (IsClientInGame(iClient))
+		{
+			TFTeam nTeam = TF2_GetClientTeam(iClient);
+			
+			// Display the message for everyone except the players in the team that can't switch teams, if the convar is set (specs will still see the message)
+			if (IsTeamAllowedToChangeClass(nTeam))
+				CPrintToChat(iClient, "{olive}Change Class on the Go is active! You are free to change classes without respawning wherever you want.");
+		}
+	}
 	
 	return Plugin_Continue;
 }

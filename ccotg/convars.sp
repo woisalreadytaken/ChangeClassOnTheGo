@@ -9,6 +9,7 @@ void ConVar_Init()
 	g_cvDisableCosmetics = CreateConVar("ccotg_disable_cosmetics", "0", "Disallows players from equipping cosmetics, to lower the toll the server takes on class change. Depends on the TF2Items extension!");
 	g_cvDisableCosmetics.AddChangeHook(ConVar_DisableCosmeticsChanged);
 	g_cvOnlyAllowTeam = CreateConVar("ccotg_only_allow_team", "", "Only allows the specified team to make use of this plugin's functionality. Accepts 'red' and 'blu(e)', anything else means we'll assume you're fine with both teams.");
+	g_cvOnlyAllowTeam.AddChangeHook(ConVar_OnlyAllowTeamChanged);
 	g_cvPreventSwitchingDuringBadStates = CreateConVar("ccotg_prevent_switching_during_bad_states", "1", "Lazy temporary beta convar - disallows switching classes if are doing following: Jetpacking (to prevent a persistent looping sound bug) and hauling a building (does some bad animation stuff)");
 	g_cvMessWithArenaRoundStates = CreateConVar("ccotg_arena_change_round_states", "1", "Changes the round state in arena mode so players can use the default changeclass key mid round. Disable if this breaks anything, doing so will let players change classes with their 'dropitem' key instead.");
 	g_cvMessWithArenaRoundStates.AddChangeHook(ConVar_MessWithArenaRoundStatesChanged);
@@ -44,6 +45,22 @@ void ConVar_DisableCosmeticsChanged(ConVar convar, const char[] oldValue, const 
 	{
 		PrintToServer("The 'ccotg_disable_cosmetics' ConVar DEPENDS on the TF2Items extension which does not exist in this server. It has been AUTOMATICALLY DISABLED.");
 		g_cvDisableCosmetics.SetInt(0);
+	}
+}
+
+void ConVar_OnlyAllowTeamChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	if (StrContains(newValue, "red", false) != -1)
+	{
+		g_nTeamThatIsAllowedToChangeClass = TFTeam_Red;
+	}
+	else if (StrContains(newValue, "blu", false) != -1)
+	{
+		g_nTeamThatIsAllowedToChangeClass = TFTeam_Blue;
+	}
+	else
+	{
+		g_nTeamThatIsAllowedToChangeClass = TFTeam_Unassigned;
 	}
 }
 

@@ -45,17 +45,9 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 		return Plugin_Continue;
 	
 	TFTeam nTeam = TF2_GetClientTeam(iClient);
-	char sTeam[4];
-	g_cvOnlyAllowTeam.GetString(sTeam, sizeof(sTeam));
 	
-	if (StrContains(sTeam, "red", false) != -1 && nTeam != TFTeam_Red)
-	{
+	if (!IsTeamAllowedToChangeClass(nTeam))
 		return Plugin_Continue;
-	}
-	else if (StrContains(sTeam, "blu", false) != -1 && nTeam != TFTeam_Blue)
-	{
-		return Plugin_Continue;
-	}
 	
 	char sClass[16];
 	GetCmdArg(1, sClass, sizeof(sClass));

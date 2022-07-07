@@ -41,8 +41,17 @@ public Action Event_RoundStart(Event event, const char[] sName, bool bDontBroadc
 	if (!g_bArenaMode || g_cvMessWithArenaRoundStates.BoolValue)
 		return Plugin_Continue;
 		
-	// If it's arena mode and we're not messing with round states, let players know they can open the class select menu... with a different key...
-	CPrintToChatAll("{olive}You can switch classes mid round by pressing your {yellow}'dropitem' {olive}key.");
+	for (int iClient = 1; iClient <= MaxClients; iClient++)
+	{
+		if (IsClientInGame(iClient))
+		{
+			TFTeam nTeam = TF2_GetClientTeam(iClient);
+			
+			// If it's arena mode and we're not messing with round states, let players know they can open the class select menu... with a different key...
+			if (nTeam > TFTeam_Spectator && IsTeamAllowedToChangeClass(nTeam))
+				CPrintToChat(iClient, "{olive}You can switch classes mid round by pressing your {yellow}'dropitem' {olive}key.");
+		}
+	}
 	
 	return Plugin_Continue;
 }
