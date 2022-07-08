@@ -66,18 +66,19 @@ void ConVar_OnlyAllowTeamChanged(ConVar convar, const char[] oldValue, const cha
 
 void ConVar_MessWithArenaRoundStatesChanged(ConVar convar, const char[] oldValue, const char[] newValue)
 {
+	if (!g_cvEnabled.BoolValue)
+		return;
+	
 	if (!g_bArenaMode)
 		return;
 	
-	// If we're enabling this, check if a round is running so we can change the round state to what we want
-	// RoundState_Stalemate is used for the main round in arena mode, idk valve kinda rarted
-	if (convar.BoolValue && GameRules_GetRoundState() == RoundState_Stalemate)
+	// this doesn't even work, will do something about it later
+	if (convar.BoolValue)
 	{
-		GameRules_SetProp("m_iRoundState", RoundState_RoundRunning);
+		SendProxy_HookGameRules("m_iRoundState", Prop_Int, SendProxy_ArenaRoundState);
 	}
-	// If we're disabling this, check if we're using the fucked up round state so we can change it back
-	else if (!convar.BoolValue && GameRules_GetRoundState() == RoundState_RoundRunning)
+	else
 	{
-		GameRules_SetProp("m_iRoundState", RoundState_Stalemate);
+		SendProxy_UnhookGameRules("m_iRoundState", SendProxy_ArenaRoundState);
 	}
 }

@@ -7,6 +7,7 @@ It has not been tested yet and may be super crusty. It also has planned features
 - SourceMod 1.11 (untested on 1.10, but should work)
 - [TF2Attributes](https://forums.alliedmods.net/showthread.php?t=210221)
 - [TF2 Econ Data](https://forums.alliedmods.net/showthread.php?t=315011)
+- [SlidyBat's SendProxy Manager extension fork](https://github.com/SlidyBat/sendproxy)
 - [More Colors](https://forums.alliedmods.net/showthread.php?t=185016) (compile only)
 
 Optional: [TF2Items](https://forums.alliedmods.net/showthread.php?p=1050170) to make use of `ccotg_disable_cosmetics`.
@@ -20,4 +21,4 @@ Most restrictive ConVars will be disabled by default for the first time, will ne
 - `ccotg_disable_cosmetics` (0) - Disallows players from equipping cosmetics, to lower the toll the server takes on class change. Depends on the TF2Items extension!
 - `ccotg_only_allow_team` ("") - Only allows the specified team to make use of this plugin's functionality. Accepts 'red' and 'blu(e)', anything else means we'll assume you're fine with both teams.
 - `ccotg_prevent_switching_during_bad_states` (1) - Lazy temporary beta convar - disallows switching classes if players are doing the following: Jetpacking (to prevent a persistent looping sound bug) and hauling a building (does some bad animation stuff).
-- `ccotg_arena_change_round_states` (0) - Changes the round state in arena mode so players can use the default changeclass key mid round. Breaks the central Control Point! Disabling will let players change classes with their 'dropitem' key instead.
+- `ccotg_arena_change_round_states` (1) - Pretend to change the round state in arena mode so players can use the default 'changeclass' key mid round. Visually, slightly breaks the central Control Point! Disabling will let players change classes with their 'dropitem' key as a fallback instead.

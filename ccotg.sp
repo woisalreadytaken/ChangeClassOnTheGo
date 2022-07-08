@@ -6,6 +6,7 @@
 #include <tf2attributes>
 #include <tf_econ_data>
 #include <morecolors>
+#include <sendproxy>
 
 #undef REQUIRE_EXTENSIONS
 #tryinclude <tf2items>
@@ -146,6 +147,7 @@ public void Map_Enable()
 	if (FindEntityByClassname(-1, "tf_logic_arena") > MaxClients)
 	{
 		g_bArenaMode = true;
+		return;
 	}
 	else
 	{
@@ -153,9 +155,6 @@ public void Map_Enable()
 	}
 	
 	// Hook spawn rooms. We don't care about them if it's arena mode
-	if (g_bArenaMode)
-		return;
-		
 	int iEntity = MaxClients + 1;
 	
 	while ((iEntity = FindEntityByClassname(iEntity, "func_respawnroom")) > MaxClients)
@@ -271,14 +270,23 @@ public Action Timer_DealWithBuffer(Handle hTimer, int iClient)
 	if (Player(iClient).IsInBadState(false))
 	{
 		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, iClient);
+		return Plugin_Continue;
 	}
-	// If not, they should be clear to change classes
-	else
+	
+	// If we're through, they should be clear to change classes
+	Player(iClient).SetClass(nClass);
+	Player(iClient).nBufferedClass = TFClass_Unknown;
+	
+	return Plugin_Continue;
+}
+
+public Action SendProxy_ArenaRoundState(const char[] sPropName, int &iValue, int iElement)
+{
+	// Fool people into thinking the round is in an unused state so they can press comma to switch classes in arena
+	if (iValue == view_as<int>(RoundState_Stalemate))
 	{
-		Player(iClient).SetClass(nClass);
-		
-		// ...and reset their stuff
-		Player(iClient).nBufferedClass = TFClass_Unknown;
+		iValue = view_as<int>(RoundState_RoundRunning);
+		return Plugin_Changed;
 	}
 	
 	return Plugin_Continue;

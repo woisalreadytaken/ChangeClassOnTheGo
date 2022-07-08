@@ -2,6 +2,7 @@ void Event_Init()
 {
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("teamplay_round_start", Event_RoundStart);
+	HookEvent("teamplay_round_win", Event_RoundEnd);
 	HookEvent("arena_round_start", Event_ArenaRoundStart);
 }
 
@@ -56,6 +57,19 @@ public Action Event_RoundStart(Event event, const char[] sName, bool bDontBroadc
 	return Plugin_Continue;
 }
 
+public Action Event_RoundEnd(Event event, const char[] sName, bool bDontBroadcast)
+{
+	if (!g_cvEnabled.BoolValue)
+		return Plugin_Continue;
+	
+	if (!g_bArenaMode || !g_cvMessWithArenaRoundStates.BoolValue)
+		return Plugin_Continue;
+	
+	// If it's arena mode and we're messing with round states, well... do that
+	SendProxy_HookGameRules("m_iRoundState", Prop_Int, SendProxy_ArenaRoundState);
+	return Plugin_Continue;
+}
+	
 public Action Event_ArenaRoundStart(Event event, const char[] sName, bool bDontBroadcast)
 {
 	if (!g_cvEnabled.BoolValue)
@@ -65,7 +79,7 @@ public Action Event_ArenaRoundStart(Event event, const char[] sName, bool bDontB
 		return Plugin_Continue;
 	
 	// If it's arena mode and we're messing with round states, well... do that
-	GameRules_SetProp("m_iRoundState", RoundState_RoundRunning);
+	SendProxy_HookGameRules("m_iRoundState", Prop_Int, SendProxy_ArenaRoundState);
 	
 	return Plugin_Continue;
 }
