@@ -12,21 +12,6 @@
 
 #define PLUGIN_VERSION		"0.2"
 
-enum
-{
-	LoadoutSlot_Primary = 0,
-	LoadoutSlot_Secondary,
-	LoadoutSlot_Melee,
-	LoadoutSlot_Utility,
-	LoadoutSlot_Building,
-	LoadoutSlot_PDA,
-	LoadoutSlot_PDA2,
-	LoadoutSlot_Head,
-	LoadoutSlot_Misc,
-	LoadoutSlot_Action,
-	LoadoutSlot_Misc2
-};
-
 bool g_bArenaMode;
 Handle g_hBufferTimer[MAXPLAYERS + 1];
 TFTeam g_nTeamThatIsAllowedToChangeClass;
