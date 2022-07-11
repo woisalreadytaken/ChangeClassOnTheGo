@@ -16,6 +16,9 @@ public Action Event_PlayerSpawn(Event event, const char[] sName, bool bDontBroad
 	if (!IsValidClient(iClient) || TF2_GetClientTeam(iClient) <= TFTeam_Spectator)
 		return Plugin_Continue;
 	
+	// Reset the player's buffered class
+	Player(iClient).nBufferedClass = TFClass_Unknown;
+	
 	// If the player hasn't switched classes yet, nag them on each spawn until they do
 	if (!Player(iClient).bHasChangedClass && Player(iClient).CanTeamChangeClass())
 		PrintCenterText(iClient, "%t", "ChangeClass_Main_Hint");

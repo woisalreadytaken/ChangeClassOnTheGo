@@ -185,8 +185,8 @@ public Action Timer_DealWithBuffer(Handle hTimer, int iClient)
 		
 	TFClassType nClass = Player(iClient).nBufferedClass;
 	
-	// If the player has selected the class they already are, reset their buffer
-	if (nClass == TF2_GetPlayerClass(iClient))
+	// If the player has selected the class they already are, or their buffered class has already been reset, abort
+	if (nClass == TF2_GetPlayerClass(iClient) || nClass <= TFClass_Unknown)
 	{
 		CPrintToChat(iClient, "%t", "ChangeClass_Wait_Cancelled");
 		Player(iClient).nBufferedClass = TFClass_Unknown;
