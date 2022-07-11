@@ -4,13 +4,8 @@
 #include <tf2>
 #include <tf2_stocks>
 #include <tf2attributes>
-#include <tf_econ_data>
 #include <morecolors>
 #include <sendproxy>
-
-#undef REQUIRE_EXTENSIONS
-#tryinclude <tf2items>
-#define REQUIRE_EXTENSIONS
 
 #pragma semicolon 1
 #pragma newdecls required
@@ -33,7 +28,6 @@ enum
 };
 
 bool g_bArenaMode;
-bool g_bTF2Items;
 
 Handle g_hAnnouncementTimer;
 Handle g_hBufferTimer[MAXPLAYERS + 1];
@@ -56,7 +50,6 @@ char g_sClassNames[view_as<int>(TFClass_Engineer) + 1][] = {
 ConVar g_cvEnabled;
 ConVar g_cvAnnouncementTimer;
 ConVar g_cvCooldown;
-ConVar g_cvDisableCosmetics;
 ConVar g_cvOnlyAllowTeam;
 ConVar g_cvPreventSwitchingDuringBadStates;
 ConVar g_cvMessWithArenaRoundStates;
@@ -79,9 +72,7 @@ public Plugin myinfo =
 }
 
 public void OnPluginStart()
-{
-	g_bTF2Items = LibraryExists("TF2Items");
-	
+{	
 	Console_Init();
 	ConVar_Init();
 	Event_Init();
@@ -191,26 +182,6 @@ public void OnEntityCreated(int iEntity, const char[] sClassname)
 		SDKHook(iEntity, SDKHook_StartTouch, SDKHook_FuncRespawnRoom_StartTouch);
 		SDKHook(iEntity, SDKHook_EndTouch, SDKHook_FuncRespawnRoom_EndTouch);
 	}
-}
-	
-public Action TF2Items_OnGiveNamedItem(int iClient, char[] sClassname, int iIndex, Handle &hItem)
-{
-	if (!g_cvEnabled.BoolValue)
-		return Plugin_Continue;
-		
-	if (!g_cvDisableCosmetics.BoolValue)
-		return Plugin_Continue;
-	
-	// This is only used to block cosmetics, so we don't really care about class-specific slots
-	int iSlot = TF2Econ_GetItemDefaultLoadoutSlot(iIndex);
-	
-	// I'm pretty sure only LoadoutSlot_Misc is used for cosmetics, but just in case
-	if (iSlot == LoadoutSlot_Misc ||
-		iSlot == LoadoutSlot_Misc2 ||
-		iSlot == LoadoutSlot_Head)
-		return Plugin_Handled;
-	
-	return Plugin_Continue;
 }
 
 public Action Timer_MainAnnouncement(Handle hTimer)
