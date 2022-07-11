@@ -20,9 +20,11 @@ public Action Event_PlayerSpawn(Event event, const char[] sName, bool bDontBroad
 	if (!Player(iClient).bHasChangedClass && Player(iClient).CanTeamChangeClass())
 		PrintCenterText(iClient, "Change Class on the Go is active!\nYou can change classes without dying anywhere.");
 	
+	TFClassType nClass = TF2_GetPlayerClass(iClient)
+	
 	// Remove gunslinger viewmodels given by the plugin if they spawn with it... and are not a Sniper
 	// Doing it this way fucks up animations for other classes if they die as sniper then switch while dead, but that's the only way I could find so far that doesn't have a server-crashing side effect
-	if (TF2_GetPlayerClass(iClient) != TFClass_Sniper && Player(iClient).bHasRobotArm)
+	if (nClass != TFClass_Sniper && Player(iClient).bHasRobotArm)
 	{
 		TF2Attrib_RemoveByName(iClient, "mod wrench builds minisentry");
 		Player(iClient).bHasRobotArm = false;
@@ -35,6 +37,17 @@ public Action Event_PlayerSpawn(Event event, const char[] sName, bool bDontBroad
 				SetEntityRenderMode(iWeapon, RENDER_TRANSCOLOR);
 				SetEntityRenderColor(iWeapon, _, _, _, 255);
 			}
+		}
+	}
+	
+	// Make sure to add any stray buildings back to the engineer on respawn, so he can't build multiple
+	if (nClass == TFClass_Engineer && g_cvKeepBuildings.BoolValue)
+	{
+		int iBuilding = MaxClients + 1;
+		while ((iBuilding = FindEntityByClassname(iBuilding, "obj_*")) > MaxClients)
+		{
+			if (GetEntPropEnt(iBuilding, Prop_Send, "m_hBuilder") == iClient)
+				SDKCall_AddObject(iClient, iBuilding);
 		}
 	}
 	

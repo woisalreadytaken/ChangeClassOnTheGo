@@ -47,6 +47,7 @@ char g_sClassNames[view_as<int>(TFClass_Engineer) + 1][] = {
 ConVar g_cvEnabled;
 ConVar g_cvCooldown;
 ConVar g_cvOnlyAllowTeam;
+ConVar g_cvKeepBuildings;
 ConVar g_cvPreventSwitchingDuringBadStates;
 ConVar g_cvMessWithArenaRoundStates;
 
@@ -186,7 +187,6 @@ public Action Timer_DealWithBuffer(Handle hTimer, int iClient)
 	if (nClass == TF2_GetPlayerClass(iClient))
 	{
 		CPrintToChat(iClient, "{green}You will no longer switch classes.");
-		
 		Player(iClient).nBufferedClass = TFClass_Unknown;
 		
 		return Plugin_Continue;
