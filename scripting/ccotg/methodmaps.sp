@@ -1,4 +1,5 @@
 static float g_flLastClassChange[MAXPLAYERS + 1];
+static bool g_bHasChangedClass[MAXPLAYERS + 1];
 static bool g_bHasRobotArm[MAXPLAYERS + 1];
 static bool g_bIsInRespawnRoom[MAXPLAYERS + 1];
 static TFClassType g_nBufferedClass[MAXPLAYERS + 1];
@@ -27,6 +28,18 @@ methodmap Player
 		public set(float flTime)
 		{
 			g_flLastClassChange[this.iClient] = flTime;
+		}
+	}
+	
+	property bool bHasChangedClass
+	{
+		public get()
+		{
+			return g_bHasChangedClass[this.iClient];
+		}
+		public set(bool bHasChangedClass)
+		{
+			g_bHasChangedClass[this.iClient] = bHasChangedClass;
 		}
 	}
 	
@@ -69,8 +82,9 @@ methodmap Player
 	public void Reset()
 	{
 		this.flLastClassChange = GetGameTime();
-		this.bIsInRespawnRoom = false;
+		this.bHasChangedClass = false;
 		this.bHasRobotArm = false;
+		this.bIsInRespawnRoom = false;
 		this.nBufferedClass = TFClass_Unknown;
 	}
 	
@@ -78,8 +92,33 @@ methodmap Player
 	{
 		// Switching classes while taunting makes players have no active weapon, so stop them
 		TF2_RemoveCondition(this.iClient, TFCond_Taunting);
-	
-		// i fucking hate the sniper :DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+		
+		// Check if the player is switching FROM engineer to handle building ownership
+		TFClassType nCurrentClass = TF2_GetPlayerClass(this.iClient);
+		
+		if (nCurrentClass == TFClass_Engineer)
+		{
+			int iBuilding = MaxClients + 1;
+			while ((iBuilding = FindEntityByClassname(iBuilding, "obj_*")) > MaxClients)
+			{
+				if (GetEntPropEnt(iBuilding, Prop_Send, "m_hBuilder") == this.iClient)
+				{
+					if (g_cvKeepBuildings.BoolValue)
+					{
+						// Detach buildings from engineers before switching class if the convar to keep is on
+						SDKCall_RemoveObject(this.iClient, iBuilding);
+					}
+					else
+					{
+						// If it is not on, murder them. kill them. dispose of their mechanical bodies.
+						SetVariantInt(999999);
+						AcceptEntityInput(iBuilding, "RemoveHealth");
+					}
+				}
+			}
+		}
+		
+		// If switching to sniper, handle the gunslinger viewmodel before actually switching classes
 		if (nClass == TFClass_Sniper)
 		{
 			// Give him the the "mod wrench builds minisentry" attribute (before changing classes) to prevent a server crash related to specifically the Sniper's viewmodel
@@ -100,10 +139,9 @@ methodmap Player
 		TF2_SetPlayerClass(this.iClient, nClass, false, true);
 		TF2_RegeneratePlayer(this.iClient);
 		
-		// have i told you how much i fucking hate this class?
+		// If the player switched to sniper, now make their non-passive weapons hidden, because the engi's hand is ugly to look at
 		if (nClass == TFClass_Sniper)
 		{
-			// Hide all non-passive weapons (after changing classes), because the engi's hand is ugly to look at
 			for (int i = TFWeaponSlot_Primary; i <= TFWeaponSlot_Melee; i++)
 			{
 				int iWeapon = GetPlayerWeaponSlot(this.iClient, i);
@@ -115,6 +153,16 @@ methodmap Player
 			}
 			
 			CPrintToChat(this.iClient, "{red}Your Sniper weapons were made invisible to prevent server crashes. Apologies for the inconvenience.");
+		}
+		// If switching back to engineer, check if there are any owned-but-not-really buildings and attach them back to the player
+		else if (nClass == TFClass_Engineer && g_cvKeepBuildings.BoolValue)
+		{
+			int iBuilding = MaxClients + 1;
+			while ((iBuilding = FindEntityByClassname(iBuilding, "obj_*")) > MaxClients)
+			{
+				if (GetEntPropEnt(iBuilding, Prop_Send, "m_hBuilder") == this.iClient)
+					SDKCall_AddObject(this.iClient, iBuilding);
+			}
 		}
 		
 		int iNewHealth = GetEntProp(this.iClient, Prop_Send, "m_iHealth");
@@ -129,7 +177,14 @@ methodmap Player
 			SetEntProp(this.iClient, Prop_Send, "m_iHealth", iMaxHealth);
 		}
 		
+		// Add a little effect
+		float vecPos[3];
+		GetClientAbsOrigin(this.iClient, vecPos);
+		ShowParticle(TF2_GetClientTeam(this.iClient) == TFTeam_Blue ? "teleportedin_blue" : "teleportedin_red", 0.1, vecPos);
+		
+		// Update properties
 		this.flLastClassChange = GetGameTime();
+		this.bHasChangedClass = true;
 	}
 	
 	public bool IsInCooldown(bool bDisplayText = false)
@@ -147,7 +202,7 @@ methodmap Player
 		if (flTimeSinceLastChange < flCooldown)
 		{
 			if (bDisplayText)
-				CPrintToChat(this.iClient, "{red}You will switch classes in approximately {unique}%.2fs{red}.", (flCooldown - flTimeSinceLastChange));
+				CPrintToChat(this.iClient, "%t", "ChangeClass_Wait_Cooldown", (flCooldown - flTimeSinceLastChange));
 			
 			bResult = true;
 		}
@@ -167,19 +222,30 @@ methodmap Player
 		if (TF2_IsPlayerInCondition(this.iClient, TFCond_RocketPack))
 		{
 			if (bDisplayText)
-				CPrintToChat(this.iClient, "{red}You will switch classes when you are done {unique}jetpacking{red}.");
+				CPrintToChat(this.iClient, "%t", "ChangeClass_Wait_BadState_Jetpacking");
 			
 			bResult = true;
 		}
 		// Hauling a building makes other classes A-pose and not be able to place the hauled building until you switch back to Engie (or hold the Sapper as Spy, or respawn)
-		else if (GetEntProp(this.iClient, Prop_Send, "m_bCarryingObject"))
+		else if (GetEntProp(this.iClient, Prop_Send, "m_bCarryingObject") && g_cvKeepBuildings.BoolValue)
 		{
 			if (bDisplayText)
-				CPrintToChat(this.iClient, "{red}You will switch classes when you are done {unique}hauling a building{red}.");
+				CPrintToChat(this.iClient, "%t", "ChangeClass_Wait_BadState_Hauling");
 			
 			bResult = true;
 		}
 		
 		return bResult;
+	}
+	
+	public bool CanTeamChangeClass()
+	{
+		// Checking for the only-allow-team convar
+		TFTeam nTeam = TF2_GetClientTeam(this.iClient);
+		
+		if (g_nTeamThatIsAllowedToChangeClass <= TFTeam_Spectator || g_nTeamThatIsAllowedToChangeClass == nTeam)
+			return true;
+		
+		return false;
 	}
 }

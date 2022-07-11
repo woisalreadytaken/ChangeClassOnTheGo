@@ -4,18 +4,13 @@
 #include <tf2>
 #include <tf2_stocks>
 #include <tf2attributes>
-#include <tf_econ_data>
 #include <morecolors>
 #include <sendproxy>
-
-#undef REQUIRE_EXTENSIONS
-#tryinclude <tf2items>
-#define REQUIRE_EXTENSIONS
 
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION		"0.1"
+#define PLUGIN_VERSION		"0.2"
 
 enum
 {
@@ -33,11 +28,7 @@ enum
 };
 
 bool g_bArenaMode;
-bool g_bTF2Items;
-
-Handle g_hAnnouncementTimer;
 Handle g_hBufferTimer[MAXPLAYERS + 1];
-
 TFTeam g_nTeamThatIsAllowedToChangeClass;
 
 char g_sClassNames[view_as<int>(TFClass_Engineer) + 1][] = {
@@ -54,10 +45,9 @@ char g_sClassNames[view_as<int>(TFClass_Engineer) + 1][] = {
 };
 
 ConVar g_cvEnabled;
-ConVar g_cvAnnouncementTimer;
 ConVar g_cvCooldown;
-ConVar g_cvDisableCosmetics;
 ConVar g_cvOnlyAllowTeam;
+ConVar g_cvKeepBuildings;
 ConVar g_cvPreventSwitchingDuringBadStates;
 ConVar g_cvMessWithArenaRoundStates;
 
@@ -80,7 +70,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	g_bTF2Items = LibraryExists("TF2Items");
+	LoadTranslations("ccotg.phrases");
 	
 	Console_Init();
 	ConVar_Init();
@@ -109,12 +99,6 @@ public void Enable()
 {
 	if (!g_cvEnabled.BoolValue)
 		return;
-		
-	if (g_cvAnnouncementTimer.FloatValue > 0.0)
-	{
-		CreateTimer(0.0, Timer_MainAnnouncement); // In case the plugin was loaded mid-game, display a message immediately
-		g_hAnnouncementTimer = CreateTimer(g_cvAnnouncementTimer.FloatValue, Timer_MainAnnouncement, _, TIMER_REPEAT);
-	}
 	
 	// Treat in-game clients as if they're joining (resets them)
 	for (int iClient = 1; iClient <= MaxClients; iClient++)
@@ -177,8 +161,6 @@ public void Disable()
 		SDKUnhook(iEntity, SDKHook_StartTouch, SDKHook_FuncRespawnRoom_StartTouch);
 		SDKUnhook(iEntity, SDKHook_EndTouch, SDKHook_FuncRespawnRoom_EndTouch);
 	}
-	
-	delete g_hAnnouncementTimer;
 }
 
 public void OnEntityCreated(int iEntity, const char[] sClassname)
@@ -192,43 +174,6 @@ public void OnEntityCreated(int iEntity, const char[] sClassname)
 		SDKHook(iEntity, SDKHook_EndTouch, SDKHook_FuncRespawnRoom_EndTouch);
 	}
 }
-	
-public Action TF2Items_OnGiveNamedItem(int iClient, char[] sClassname, int iIndex, Handle &hItem)
-{
-	if (!g_cvEnabled.BoolValue)
-		return Plugin_Continue;
-		
-	if (!g_cvDisableCosmetics.BoolValue)
-		return Plugin_Continue;
-	
-	// This is only used to block cosmetics, so we don't really care about class-specific slots
-	int iSlot = TF2Econ_GetItemDefaultLoadoutSlot(iIndex);
-	
-	// I'm pretty sure only LoadoutSlot_Misc is used for cosmetics, but just in case
-	if (iSlot == LoadoutSlot_Misc ||
-		iSlot == LoadoutSlot_Misc2 ||
-		iSlot == LoadoutSlot_Head)
-		return Plugin_Handled;
-	
-	return Plugin_Continue;
-}
-
-public Action Timer_MainAnnouncement(Handle hTimer)
-{
-	for (int iClient = 1; iClient <= MaxClients; iClient++)
-	{
-		if (IsClientInGame(iClient))
-		{
-			TFTeam nTeam = TF2_GetClientTeam(iClient);
-			
-			// Display the message for everyone except the players in the team that can't switch teams, if the convar is set (specs will still see the message)
-			if (IsTeamAllowedToChangeClass(nTeam))
-				CPrintToChat(iClient, "{olive}Change Class on the Go is active! You are free to change classes without respawning wherever you want.");
-		}
-	}
-	
-	return Plugin_Continue;
-}
 
 public Action Timer_DealWithBuffer(Handle hTimer, int iClient)
 {
@@ -240,11 +185,10 @@ public Action Timer_DealWithBuffer(Handle hTimer, int iClient)
 		
 	TFClassType nClass = Player(iClient).nBufferedClass;
 	
-	// If the player has selected the class they already are, reset their buffer
-	if (nClass == TF2_GetPlayerClass(iClient))
+	// If the player has selected the class they already are, or their buffered class has already been reset, abort
+	if (nClass == TF2_GetPlayerClass(iClient) || nClass <= TFClass_Unknown)
 	{
-		CPrintToChat(iClient, "{green}You will no longer switch classes.");
-		
+		CPrintToChat(iClient, "%t", "ChangeClass_Wait_Cancelled");
 		Player(iClient).nBufferedClass = TFClass_Unknown;
 		
 		return Plugin_Continue;
