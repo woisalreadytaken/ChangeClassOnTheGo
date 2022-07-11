@@ -143,6 +143,11 @@ methodmap Player
 			SetEntProp(this.iClient, Prop_Send, "m_iHealth", iMaxHealth);
 		}
 		
+		// Add a little effect
+		float vecPos[3];
+		GetClientAbsOrigin(this.iClient, vecPos);
+		ShowParticle(TF2_GetClientTeam(this.iClient) == TFTeam_Blue ? "teleportedin_blue" : "teleportedin_red", 0.1, vecPos);
+		
 		// Update properties
 		this.flLastClassChange = GetGameTime();
 		this.bHasChangedClass = true;
