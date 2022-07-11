@@ -1,17 +1,15 @@
 # Change Class on the Go
 Scuffed pseudo-gamemode that allows everyone to change classes at will, anywhere.
 
-It has not been tested yet and may be super crusty. It also has planned features that are missing, such as ammo and charge meter management.
+It is currently missing some planned features, such as ammo and charge meter management.
 
 ## Dependencies
-- SourceMod 1.11 (untested on 1.10, but should work)
+- SourceMod 1.11
 - [TF2Attributes](https://forums.alliedmods.net/showthread.php?t=210221)
 - [SlidyBat's SendProxy Manager extension fork](https://github.com/SlidyBat/sendproxy)
 - [More Colors](https://forums.alliedmods.net/showthread.php?t=185016) (compile only)
 
 ## ConVars
-Most restrictive ConVars will be disabled by default for the first time, will need to see how laggy it really is
-
 - `ccotg_enabled` (1) - Is 'Change Class on the Go' enabled?
 - `ccotg_announcement_interval` (240.0) - Amount of time (in seconds!) taken for the main announcement message to be re-sent.
 - `ccotg_cooldown` (0.0) - Amount of time (in seconds!) required for a player to be allowed to change classes again.
