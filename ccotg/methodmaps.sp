@@ -198,4 +198,15 @@ methodmap Player
 		
 		return bResult;
 	}
+	
+	public bool CanTeamChangeClass()
+	{
+		// Checking for the only-allow-team convar
+		TFTeam nTeam = TF2_GetClientTeam(this.iClient);
+		
+		if (g_nTeamThatIsAllowedToChangeClass <= TFTeam_Spectator || g_nTeamThatIsAllowedToChangeClass == nTeam)
+			return true;
+		
+		return false;
+	}
 }

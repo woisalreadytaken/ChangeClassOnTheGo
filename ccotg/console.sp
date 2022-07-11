@@ -45,9 +45,7 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	if (Player(iClient).bIsInRespawnRoom || GameRules_GetRoundState() == RoundState_Preround)
 		return Plugin_Continue;
 	
-	TFTeam nTeam = TF2_GetClientTeam(iClient);
-	
-	if (!IsTeamAllowedToChangeClass(nTeam))
+	if (!Player(iClient).CanTeamChangeClass())
 		return Plugin_Continue;
 	
 	char sClass[16];

@@ -16,10 +16,8 @@ public Action Event_PlayerSpawn(Event event, const char[] sName, bool bDontBroad
 	if (!IsValidClient(iClient) || TF2_GetClientTeam(iClient) <= TFTeam_Spectator)
 		return Plugin_Continue;
 	
-	TFTeam nTeam = TF2_GetClientTeam(iClient);
-	
 	// If the player hasn't switched classes yet, nag them on each spawn until they do
-	if (!Player(iClient).bHasChangedClass && IsTeamAllowedToChangeClass(nTeam))
+	if (!Player(iClient).bHasChangedClass && Player(iClient).CanTeamChangeClass())
 		PrintCenterText(iClient, "Change Class on the Go is active!\nYou can change classes without dying anywhere.");
 	
 	// Remove gunslinger viewmodels given by the plugin if they spawn with it... and are not a Sniper
@@ -55,10 +53,8 @@ public Action Event_RoundStart(Event event, const char[] sName, bool bDontBroadc
 	{
 		if (IsClientInGame(iClient))
 		{
-			TFTeam nTeam = TF2_GetClientTeam(iClient);
-			
 			// If it's arena mode and we're not messing with round states, let players know they can open the class select menu... with a different key...
-			if (nTeam > TFTeam_Spectator && IsTeamAllowedToChangeClass(nTeam))
+			if (Player(iClient).CanTeamChangeClass())
 				CPrintToChat(iClient, "{olive}You can switch classes mid round by pressing your {yellow}'dropitem' {olive}key.");
 		}
 	}
