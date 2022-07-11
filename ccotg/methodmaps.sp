@@ -1,4 +1,5 @@
 static float g_flLastClassChange[MAXPLAYERS + 1];
+static bool g_bHasChangedClass[MAXPLAYERS + 1];
 static bool g_bHasRobotArm[MAXPLAYERS + 1];
 static bool g_bIsInRespawnRoom[MAXPLAYERS + 1];
 static TFClassType g_nBufferedClass[MAXPLAYERS + 1];
@@ -27,6 +28,18 @@ methodmap Player
 		public set(float flTime)
 		{
 			g_flLastClassChange[this.iClient] = flTime;
+		}
+	}
+	
+	property bool bHasChangedClass
+	{
+		public get()
+		{
+			return g_bHasChangedClass[this.iClient];
+		}
+		public set(bool bHasChangedClass)
+		{
+			g_bHasChangedClass[this.iClient] = bHasChangedClass;
 		}
 	}
 	
@@ -69,8 +82,9 @@ methodmap Player
 	public void Reset()
 	{
 		this.flLastClassChange = GetGameTime();
-		this.bIsInRespawnRoom = false;
+		this.bHasChangedClass = false;
 		this.bHasRobotArm = false;
+		this.bIsInRespawnRoom = false;
 		this.nBufferedClass = TFClass_Unknown;
 	}
 	
@@ -129,7 +143,9 @@ methodmap Player
 			SetEntProp(this.iClient, Prop_Send, "m_iHealth", iMaxHealth);
 		}
 		
+		// Update properties
 		this.flLastClassChange = GetGameTime();
+		this.bHasChangedClass = true;
 	}
 	
 	public bool IsInCooldown(bool bDisplayText = false)

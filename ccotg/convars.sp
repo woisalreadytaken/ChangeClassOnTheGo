@@ -1,10 +1,7 @@
 void ConVar_Init()
 {
-	// Most restriction ConVars will be disabled for initial testing, and may be enabled on the fly
 	g_cvEnabled = CreateConVar("ccotg_enabled", "1", "Is 'Change Class on the Go' enabled?", _, true, 0.0, true, 1.0);
 	g_cvEnabled.AddChangeHook(ConVar_EnabledChanged);
-	g_cvAnnouncementTimer = CreateConVar("ccotg_announcement_interval", "240.0", "Amount of time (in seconds!) taken for the main announcement message to be re-sent.");
-	g_cvAnnouncementTimer.AddChangeHook(ConVar_AnnouncementTimerChanged);
 	g_cvCooldown = CreateConVar("ccotg_cooldown", "0.0", "Amount of time (in seconds!) required for a player to be allowed to change classes again.");
 	g_cvOnlyAllowTeam = CreateConVar("ccotg_only_allow_team", "", "Only allows the specified team to make use of this plugin's functionality. Accepts 'red' and 'blu(e)', anything else means we'll assume you're fine with both teams.");
 	g_cvOnlyAllowTeam.AddChangeHook(ConVar_OnlyAllowTeamChanged);
@@ -24,14 +21,6 @@ void ConVar_EnabledChanged(ConVar convar, const char[] oldValue, const char[] ne
 	{
 		Disable();
 	}
-}
-
-void ConVar_AnnouncementTimerChanged(ConVar convar, const char[] oldValue, const char[] newValue)
-{
-	delete g_hAnnouncementTimer;
-	
-	if (convar.FloatValue > 0.0)
-		g_hAnnouncementTimer = CreateTimer(g_cvAnnouncementTimer.FloatValue, Timer_MainAnnouncement, _, TIMER_REPEAT);
 }
 
 void ConVar_OnlyAllowTeamChanged(ConVar convar, const char[] oldValue, const char[] newValue)

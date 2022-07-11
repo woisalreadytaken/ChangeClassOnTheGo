@@ -13,21 +13,30 @@ public Action Event_PlayerSpawn(Event event, const char[] sName, bool bDontBroad
 		
 	int iClient = GetClientOfUserId(event.GetInt("userid"));
 	
-	if (!IsValidClient(iClient) || TF2_GetClientTeam(iClient) <= TFTeam_Spectator || TF2_GetPlayerClass(iClient) == TFClass_Sniper || !Player(iClient).bHasRobotArm)
+	if (!IsValidClient(iClient) || TF2_GetClientTeam(iClient) <= TFTeam_Spectator)
 		return Plugin_Continue;
+	
+	TFTeam nTeam = TF2_GetClientTeam(iClient);
+	
+	// If the player hasn't switched classes yet, nag them on each spawn until they do
+	if (!Player(iClient).bHasChangedClass && IsTeamAllowedToChangeClass(nTeam))
+		PrintCenterText(iClient, "Change Class on the Go is active!\nYou can change classes without dying anywhere.");
 	
 	// Remove gunslinger viewmodels given by the plugin if they spawn with it... and are not a Sniper
 	// Doing it this way fucks up animations for other classes if they die as sniper then switch while dead, but that's the only way I could find so far that doesn't have a server-crashing side effect
-	TF2Attrib_RemoveByName(iClient, "mod wrench builds minisentry");
-	Player(iClient).bHasRobotArm = false;
-	
-	for (int i = TFWeaponSlot_Primary; i <= TFWeaponSlot_Melee; i++)
+	if (TF2_GetPlayerClass(iClient) != TFClass_Sniper && Player(iClient).bHasRobotArm)
 	{
-		int iWeapon = GetPlayerWeaponSlot(iClient, i);
-		if (iWeapon > MaxClients)
+		TF2Attrib_RemoveByName(iClient, "mod wrench builds minisentry");
+		Player(iClient).bHasRobotArm = false;
+		
+		for (int i = TFWeaponSlot_Primary; i <= TFWeaponSlot_Melee; i++)
 		{
-			SetEntityRenderMode(iWeapon, RENDER_TRANSCOLOR);
-			SetEntityRenderColor(iWeapon, _, _, _, 255);
+			int iWeapon = GetPlayerWeaponSlot(iClient, i);
+			if (iWeapon > MaxClients)
+			{
+				SetEntityRenderMode(iWeapon, RENDER_TRANSCOLOR);
+				SetEntityRenderColor(iWeapon, _, _, _, 255);
+			}
 		}
 	}
 	

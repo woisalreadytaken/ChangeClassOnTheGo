@@ -11,7 +11,6 @@ It is currently missing some planned features, such as ammo and charge meter man
 
 ## ConVars
 - `ccotg_enabled` (1) - Is 'Change Class on the Go' enabled?
-- `ccotg_announcement_interval` (240.0) - Amount of time (in seconds!) taken for the main announcement message to be re-sent.
 - `ccotg_cooldown` (0.0) - Amount of time (in seconds!) required for a player to be allowed to change classes again.
 - `ccotg_only_allow_team` ("") - Only allows the specified team to make use of this plugin's functionality. Accepts 'red' and 'blu(e)', anything else means we'll assume you're fine with both teams.
 - `ccotg_prevent_switching_during_bad_states` (1) - Lazy temporary beta convar - disallows switching classes if players are doing the following: Jetpacking (to prevent a persistent looping sound bug) and hauling a building (does some bad animation stuff).

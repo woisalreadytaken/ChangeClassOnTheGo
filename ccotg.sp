@@ -28,10 +28,7 @@ enum
 };
 
 bool g_bArenaMode;
-
-Handle g_hAnnouncementTimer;
 Handle g_hBufferTimer[MAXPLAYERS + 1];
-
 TFTeam g_nTeamThatIsAllowedToChangeClass;
 
 char g_sClassNames[view_as<int>(TFClass_Engineer) + 1][] = {
@@ -48,7 +45,6 @@ char g_sClassNames[view_as<int>(TFClass_Engineer) + 1][] = {
 };
 
 ConVar g_cvEnabled;
-ConVar g_cvAnnouncementTimer;
 ConVar g_cvCooldown;
 ConVar g_cvOnlyAllowTeam;
 ConVar g_cvPreventSwitchingDuringBadStates;
@@ -100,12 +96,6 @@ public void Enable()
 {
 	if (!g_cvEnabled.BoolValue)
 		return;
-		
-	if (g_cvAnnouncementTimer.FloatValue > 0.0)
-	{
-		CreateTimer(0.0, Timer_MainAnnouncement); // In case the plugin was loaded mid-game, display a message immediately
-		g_hAnnouncementTimer = CreateTimer(g_cvAnnouncementTimer.FloatValue, Timer_MainAnnouncement, _, TIMER_REPEAT);
-	}
 	
 	// Treat in-game clients as if they're joining (resets them)
 	for (int iClient = 1; iClient <= MaxClients; iClient++)
@@ -168,8 +158,6 @@ public void Disable()
 		SDKUnhook(iEntity, SDKHook_StartTouch, SDKHook_FuncRespawnRoom_StartTouch);
 		SDKUnhook(iEntity, SDKHook_EndTouch, SDKHook_FuncRespawnRoom_EndTouch);
 	}
-	
-	delete g_hAnnouncementTimer;
 }
 
 public void OnEntityCreated(int iEntity, const char[] sClassname)
@@ -182,23 +170,6 @@ public void OnEntityCreated(int iEntity, const char[] sClassname)
 		SDKHook(iEntity, SDKHook_StartTouch, SDKHook_FuncRespawnRoom_StartTouch);
 		SDKHook(iEntity, SDKHook_EndTouch, SDKHook_FuncRespawnRoom_EndTouch);
 	}
-}
-
-public Action Timer_MainAnnouncement(Handle hTimer)
-{
-	for (int iClient = 1; iClient <= MaxClients; iClient++)
-	{
-		if (IsClientInGame(iClient))
-		{
-			TFTeam nTeam = TF2_GetClientTeam(iClient);
-			
-			// Display the message for everyone except the players in the team that can't switch teams, if the convar is set (specs will still see the message)
-			if (IsTeamAllowedToChangeClass(nTeam))
-				CPrintToChat(iClient, "{olive}Change Class on the Go is active! You are free to change classes without respawning wherever you want.");
-		}
-	}
-	
-	return Plugin_Continue;
 }
 
 public Action Timer_DealWithBuffer(Handle hTimer, int iClient)
