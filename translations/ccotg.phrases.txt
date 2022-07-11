@@ -1,0 +1,38 @@
+"Phrases"
+{
+	"ChangeClass_Main_Hint"
+	{
+		"en"		"Change Class on the Go is active!\nYou can change classes without dying anywhere."
+	}
+	
+	"ChangeClass_Arena_Hint"
+	{
+		"en"		"{olive}You can switch classes mid round by pressing your {yellow}'dropitem' {olive}key."
+	}
+	
+	"ChangeClass_Arena_Controls"
+	{
+		"en"		"%%dropitem%% CHANGE CLASS"
+	}
+	
+	"ChangeClass_Wait_Cooldown"
+	{
+		"#format"	"{1:.2f}"
+		"en"		"{red}You will switch classes in approximately {unique}{1}s{red}."
+	}
+	
+	"ChangeClass_Wait_BadState_Jetpacking"
+	{
+		"en"		"{red}You will switch classes when you are done {unique}jetpacking{red}."
+	}
+	
+	"ChangeClass_Wait_BadState_Hauling"
+	{
+		"en"		"{red}You will switch classes when you are done {unique}hauling a building{red}."
+	}
+	
+	"ChangeClass_Wait_Cancelled"
+	{
+		"en"		"{green}You will no longer switch classes."
+	}
+}

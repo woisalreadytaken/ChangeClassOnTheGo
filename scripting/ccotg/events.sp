@@ -18,7 +18,7 @@ public Action Event_PlayerSpawn(Event event, const char[] sName, bool bDontBroad
 	
 	// If the player hasn't switched classes yet, nag them on each spawn until they do
 	if (!Player(iClient).bHasChangedClass && Player(iClient).CanTeamChangeClass())
-		PrintCenterText(iClient, "Change Class on the Go is active!\nYou can change classes without dying anywhere.");
+		PrintCenterText(iClient, "%t", "ChangeClass_Main_Hint");
 	
 	TFClassType nClass = TF2_GetPlayerClass(iClient)
 	
@@ -67,8 +67,11 @@ public Action Event_RoundStart(Event event, const char[] sName, bool bDontBroadc
 		if (IsClientInGame(iClient))
 		{
 			// If it's arena mode and we're not messing with round states, let players know they can open the class select menu... with a different key...
-			if (Player(iClient).CanTeamChangeClass())
-				CPrintToChat(iClient, "{olive}You can switch classes mid round by pressing your {yellow}'dropitem' {olive}key.");
+			if (!Player(iClient).bHasChangedClass && Player(iClient).CanTeamChangeClass())
+			{
+				CPrintToChat(iClient, "%t", "ChangeClass_Arena_Hint");
+				PrintKeyHintText(iClient, "%t", "ChangeClass_Arena_Controls")
+			}
 		}
 	}
 	

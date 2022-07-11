@@ -10,6 +10,18 @@ stock void StrToLower(char[] sBuffer)
 		sBuffer[i] = CharToLower(sBuffer[i]);
 }
 
+stock void PrintKeyHintText(int iClient, const char[] sFormat, any...)
+{
+	char sBuffer[256];
+	SetGlobalTransTarget(iClient);
+	VFormat(sBuffer, sizeof(sBuffer), sFormat, 3);
+	
+	BfWrite bf = UserMessageToBfWrite(StartMessageOne("KeyHintText", iClient));
+	bf.WriteByte(1);	//One message
+	bf.WriteString(sBuffer);
+	EndMessage();
+}
+
 stock int ShowParticle(char[] sParticle, float flDuration, float vecPos[3], float vecAngles[3] = NULL_VECTOR)
 {
 	// should probably use temp ents later?

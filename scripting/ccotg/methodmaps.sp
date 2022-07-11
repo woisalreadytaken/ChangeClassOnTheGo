@@ -202,7 +202,7 @@ methodmap Player
 		if (flTimeSinceLastChange < flCooldown)
 		{
 			if (bDisplayText)
-				CPrintToChat(this.iClient, "{red}You will switch classes in approximately {unique}%.2fs{red}.", (flCooldown - flTimeSinceLastChange));
+				CPrintToChat(this.iClient, "%t", "ChangeClass_Wait_Cooldown", (flCooldown - flTimeSinceLastChange));
 			
 			bResult = true;
 		}
@@ -222,7 +222,7 @@ methodmap Player
 		if (TF2_IsPlayerInCondition(this.iClient, TFCond_RocketPack))
 		{
 			if (bDisplayText)
-				CPrintToChat(this.iClient, "{red}You will switch classes when you are done {unique}jetpacking{red}.");
+				CPrintToChat(this.iClient, "%t", "ChangeClass_Wait_BadState_Jetpacking");
 			
 			bResult = true;
 		}
@@ -230,7 +230,7 @@ methodmap Player
 		else if (GetEntProp(this.iClient, Prop_Send, "m_bCarryingObject") && g_cvKeepBuildings.BoolValue)
 		{
 			if (bDisplayText)
-				CPrintToChat(this.iClient, "{red}You will switch classes when you are done {unique}hauling a building{red}.");
+				CPrintToChat(this.iClient, "%t", "ChangeClass_Wait_BadState_Hauling");
 			
 			bResult = true;
 		}

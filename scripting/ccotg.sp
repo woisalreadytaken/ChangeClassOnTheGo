@@ -69,7 +69,9 @@ public Plugin myinfo =
 }
 
 public void OnPluginStart()
-{	
+{
+	LoadTranslations("ccotg.phrases");
+	
 	Console_Init();
 	ConVar_Init();
 	Event_Init();
@@ -186,7 +188,7 @@ public Action Timer_DealWithBuffer(Handle hTimer, int iClient)
 	// If the player has selected the class they already are, reset their buffer
 	if (nClass == TF2_GetPlayerClass(iClient))
 	{
-		CPrintToChat(iClient, "{green}You will no longer switch classes.");
+		CPrintToChat(iClient, "%t", "ChangeClass_Wait_Cancelled");
 		Player(iClient).nBufferedClass = TFClass_Unknown;
 		
 		return Plugin_Continue;
