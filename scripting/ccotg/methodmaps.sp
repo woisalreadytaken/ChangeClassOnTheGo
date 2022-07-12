@@ -132,8 +132,9 @@ methodmap Player
 			this.bHasRobotArm = false;
 		}
 		
-		// Get the player's current health now so it can be set properly after changing class
+		// Get the player's health now so it can be set properly after changing class
 		int iOldHealth = GetEntProp(this.iClient, Prop_Send, "m_iHealth");
+		int iOldMaxHealth = SDKCall_GetMaxHealth(this.iClient);
 		
 		// Change classes!
 		TF2_SetPlayerClass(this.iClient, nClass, false, true);
@@ -165,17 +166,30 @@ methodmap Player
 			}
 		}
 		
-		int iNewHealth = GetEntProp(this.iClient, Prop_Send, "m_iHealth");
-		int iMaxHealth = SDKCall_GetMaxHealth(this.iClient);
+		// Handle health
+		int iNewMaxHealth = SDKCall_GetMaxHealth(this.iClient);
+		int iFinalHealth;
 		
-		if (iOldHealth < iNewHealth) // Don't let players heal off switching classes
+		switch(g_cvHealthMode.IntValue)
 		{
-			SetEntProp(this.iClient, Prop_Send, "m_iHealth", iOldHealth);
+			// Keep the same health
+			case 1: iFinalHealth = iOldHealth;
+			
+			// Change health to have the same health:max health ratio between classes
+			case 2: iFinalHealth = RoundToCeil(iNewMaxHealth * (float(iOldHealth) / float(iOldMaxHealth)));
+			
+			// Just full heal
+			default: iFinalHealth = iNewMaxHealth;
 		}
-		else if (iOldHealth > iMaxHealth) // Don't let players be overhealed by the previous class' higher health
-		{
-			SetEntProp(this.iClient, Prop_Send, "m_iHealth", iMaxHealth);
-		}
+		
+		// Handle overheal
+		int iMaxAllowedHealth = RoundToCeil(iNewMaxHealth * g_cvHealthMaxOverheal.FloatValue);
+		
+		if (iFinalHealth > iMaxAllowedHealth)
+			iFinalHealth = iMaxAllowedHealth;
+		
+		// Set final health
+		SetEntProp(this.iClient, Prop_Send, "m_iHealth", iFinalHealth);
 		
 		// Add a little effect
 		float vecPos[3];

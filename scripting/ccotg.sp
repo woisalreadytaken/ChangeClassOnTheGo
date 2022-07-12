@@ -33,6 +33,8 @@ ConVar g_cvEnabled;
 ConVar g_cvCooldown;
 ConVar g_cvOnlyAllowTeam;
 ConVar g_cvKeepBuildings;
+ConVar g_cvHealthMode;
+ConVar g_cvHealthMaxOverheal;
 ConVar g_cvPreventSwitchingDuringBadStates;
 ConVar g_cvMessWithArenaRoundStates;
 

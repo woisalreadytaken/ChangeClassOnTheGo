@@ -16,3 +16,8 @@ It is currently missing some planned features, such as ammo and charge meter man
 - `ccotg_keep_buildings` (1) - Lets buildings stay on the map if a player switches from Engineer. Disabling makes them get destroyed instead.
 - `ccotg_prevent_switching_during_bad_states` (1) - Lazy temporary beta convar - disallows switching classes if players are doing the following: Jetpacking (to prevent a persistent looping sound bug) and hauling a building (does some bad animation stuff).
 - `ccotg_arena_change_round_states` (1) - Pretend to change the round state in arena mode so players can use the default 'changeclass' key mid round. Visually, slightly breaks the central Control Point! Disabling will let players change classes with their 'dropitem' key as a fallback instead.
+- `ccotg_health_mode` (1) - How should health be handled upon changing classes?
+	- 1: Don't change health
+	- 2: Keep the ratio of health to max health the same
+	- Any other value: Full heal
+- `ccotg_health_max_overheal` (1.5) - Max amount of overheal (multiplier of max health) that players are allowed to keep upon changing classes.
