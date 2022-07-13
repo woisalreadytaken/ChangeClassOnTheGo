@@ -50,13 +50,13 @@ void ConVar_MessWithArenaRoundStatesChanged(ConVar convar, const char[] oldValue
 	if (!g_bArenaMode)
 		return;
 	
-	// this doesn't even work, will do something about it later
-	if (convar.BoolValue)
+	// If disabled, forget that players have changed classes so they know they'll need to press a different key to do so from now on
+	if (!convar.BoolValue)
 	{
-		SendProxy_HookGameRules("m_iRoundState", Prop_Int, SendProxy_ArenaRoundState);
-	}
-	else
-	{
-		SendProxy_UnhookGameRules("m_iRoundState", SendProxy_ArenaRoundState);
+		for (int iClient = 1; iClient <= MaxClients; iClient++)
+		{
+			if (IsClientInGame(iClient))
+				Player(iClient).bHasChangedClass = false;
+		}
 	}
 }
