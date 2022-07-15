@@ -153,7 +153,7 @@ methodmap Player
 				}
 			}
 			
-			CPrintToChat(this.iClient, "{red}Your Sniper weapons were made invisible to prevent server crashes. Apologies for the inconvenience.");
+			CPrintToChat(this.iClient, "%t", "ChangeClass_Notice_Sniper");
 		}
 		// If switching back to engineer, check if there are any owned-but-not-really buildings and attach them back to the player
 		else if (nClass == TFClass_Engineer && g_cvKeepBuildings.BoolValue)
