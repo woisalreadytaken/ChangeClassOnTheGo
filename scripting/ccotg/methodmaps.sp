@@ -1,5 +1,6 @@
 static float g_flLastClassChange[MAXPLAYERS + 1];
 static bool g_bHasChangedClass[MAXPLAYERS + 1];
+static bool g_bHasChangedToSniper[MAXPLAYERS + 1];
 static bool g_bHasRobotArm[MAXPLAYERS + 1];
 static bool g_bIsInRespawnRoom[MAXPLAYERS + 1];
 static TFClassType g_nBufferedClass[MAXPLAYERS + 1];
@@ -43,6 +44,18 @@ methodmap Player
 		}
 	}
 	
+	property bool bHasChangedToSniper
+	{
+		public get()
+		{
+			return g_bHasChangedToSniper[this.iClient];
+		}
+		public set(bool bHasChangedToSniper)
+		{
+			g_bHasChangedToSniper[this.iClient] = bHasChangedToSniper;
+		}
+	}
+	
 	property bool bHasRobotArm
 	{
 		public get()
@@ -83,6 +96,7 @@ methodmap Player
 	{
 		this.flLastClassChange = GetGameTime();
 		this.bHasChangedClass = false;
+		this.bHasChangedToSniper = false;
 		this.bHasRobotArm = false;
 		this.bIsInRespawnRoom = false;
 		this.nBufferedClass = TFClass_Unknown;
@@ -153,7 +167,12 @@ methodmap Player
 				}
 			}
 			
-			CPrintToChat(this.iClient, "%t", "ChangeClass_Notice_Sniper");
+			// cringe. Only show the message after switching to sniper for the first time, though
+			if (!this.bHasChangedToSniper)
+			{
+				CPrintToChat(this.iClient, "%t", "ChangeClass_Notice_Sniper");
+				this.bHasChangedToSniper = true;
+			}
 		}
 		// If switching back to engineer, check if there are any owned-but-not-really buildings and attach them back to the player
 		else if (nClass == TFClass_Engineer && g_cvKeepBuildings.BoolValue)
