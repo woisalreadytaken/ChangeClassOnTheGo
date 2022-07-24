@@ -13,7 +13,10 @@
 #define PLUGIN_VERSION		"0.2"
 
 bool g_bArenaMode;
+
 Handle g_hBufferTimer[MAXPLAYERS + 1];
+Handle g_hArenaCountdownTimer;
+
 TFTeam g_nTeamThatIsAllowedToChangeClass;
 
 char g_sClassNames[view_as<int>(TFClass_Engineer) + 1][] = {

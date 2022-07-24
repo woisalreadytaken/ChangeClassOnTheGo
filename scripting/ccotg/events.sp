@@ -2,6 +2,7 @@ void Event_Init()
 {
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("teamplay_round_start", Event_RoundStart);
+	HookEvent("teamplay_round_win", Event_RoundEnd);
 	HookEvent("arena_round_start", Event_ArenaRoundStart);
 }
 
@@ -95,8 +96,22 @@ public Action Event_ArenaRoundStart(Event event, const char[] sName, bool bDontB
 		float flTime = GameRules_GetPropFloat("m_flCapturePointEnableTime") - GetGameTime();
 		
 		if (flTime > 5.0)
-			CreateTimer(flTime - 5.0, Timer_CapEnabledCountdown, 5);
+			g_hArenaCountdownTimer = CreateTimer(flTime - 5.0, Timer_CapEnabledCountdown, 5);
 	}
+	
+	return Plugin_Continue;
+}
+
+public Action Event_RoundEnd(Event event, const char[] sName, bool bDontBroadcast)
+{
+	if (!g_cvEnabled.BoolValue)
+		return Plugin_Continue;
+	
+	if (!g_bArenaMode || !g_cvMessWithArenaRoundStates.BoolValue)
+		return Plugin_Continue;
+		
+	// Cancel the countdown once the round ends, if it's still active
+	delete g_hArenaCountdownTimer;
 	
 	return Plugin_Continue;
 }
@@ -109,16 +124,20 @@ public Action Timer_CapEnabledCountdown(Handle hTimer, int iValue)
 	if (!g_bArenaMode || !g_cvMessWithArenaRoundStates.BoolValue)
 		return Plugin_Continue;
 	
-	if (GameRules_GetRoundState() != RoundState_Stalemate)
-		return Plugin_Continue;
-	
 	char sSound[64];
 	Format(sSound, sizeof(sSound), "Announcer.RoundBegins%dSeconds", iValue);
 	EmitGameSoundToAll(sSound);
 	iValue--;
 	
+	// Keep counting down every second
 	if (iValue > 0)
-		CreateTimer(1.0, Timer_CapEnabledCountdown, iValue);
+	{
+		g_hArenaCountdownTimer = CreateTimer(1.0, Timer_CapEnabledCountdown, iValue);
+	}
+	else
+	{
+		g_hArenaCountdownTimer = null;
+	}
 	
 	return Plugin_Continue;
 }
