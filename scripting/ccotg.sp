@@ -118,6 +118,12 @@ public void Map_Enable()
 	if (FindEntityByClassname(-1, "tf_logic_arena") > MaxClients)
 	{
 		g_bArenaMode = true;
+		
+		// Hook arena-related stuff
+		SendProxy_HookGameRules("m_iRoundState", Prop_Int, SendProxy_ArenaRoundState);
+		HookEntityOutput("tf_logic_arena", "OnCapEnabled", EntityOutput_OnArenaCapEnabled);
+		
+		// We don't care about spawn rooms if it's arena so we stop here
 		return;
 	}
 	else
@@ -139,6 +145,10 @@ public void Disable()
 {
 	// Ideally we'd want to remove gunslinger viewmodels from snipers, but that still risks crashing the server (and client) if done mid-game lol!
 	// ...so that won't be done. They'll be stuck with it until they rejoin or the map changes
+	
+	// Unhook arena-related stuff
+	SendProxy_UnhookGameRules("m_iRoundState", SendProxy_ArenaRoundState);
+	UnhookEntityOutput("tf_logic_arena", "OnCapEnabled", EntityOutput_OnArenaCapEnabled);
 	
 	int iEntity = MaxClients + 1;
 	
@@ -211,8 +221,42 @@ public Action Timer_DealWithBuffer(Handle hTimer, int iClient)
 	return Plugin_Continue;
 }
 
-public Action SendProxy_ArenaRoundState(const char[] sPropName, int &iValue, int iElement)
+public Action EntityOutput_OnArenaCapEnabled(const char[] sOutput, int iCaller, int iActivator, float flDelay)
 {
+	if (!g_cvEnabled.BoolValue)
+		return Plugin_Continue;
+	
+	if (!g_bArenaMode || !g_cvMessWithArenaRoundStates.BoolValue)
+		return Plugin_Continue;
+	
+	// If players think they're not in the 'main' arena round state, a couple of issues happen with the control point 
+	// We mitigate them here!
+	
+	// Unlock the control point(s?) by ourselves, so the players get the memo (if your map or gamemode is weird then I am so so sorry)
+	// nvm can't find anything that works so far lol, it still works it just looks fucked up
+	/*
+	int iEntity = FindEntityByClassname(-1, "tf_logic_arena");
+	if (iEntity > MaxClients)
+	{
+		GameRules_SetPropFloat("m_flCapturePointEnableTime", 0.0);
+		//PrintToChatAll("%d", DispatchKeyValueFloat(iEntity, "CapEnableDelay", 0.0));
+	}
+	*/
+	
+	// Play a 'control point enabled' administrator voiceline
+	EmitGameSoundToAll("Announcer.AM_CapEnabledRandom");
+	
+	return Plugin_Continue;
+}
+
+public Action SendProxy_ArenaRoundState(const char[] sPropName, int &iValue, int iElement, int iClient)
+{
+	if (!g_cvEnabled.BoolValue)
+		return Plugin_Continue;
+	
+	if (!g_bArenaMode || !g_cvMessWithArenaRoundStates.BoolValue)
+		return Plugin_Continue;
+	
 	// Fool people into thinking the round is in an unused state so they can press comma to switch classes in arena
 	if (iValue == view_as<int>(RoundState_Stalemate))
 	{

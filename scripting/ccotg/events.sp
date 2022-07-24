@@ -2,7 +2,6 @@ void Event_Init()
 {
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("teamplay_round_start", Event_RoundStart);
-	HookEvent("teamplay_round_win", Event_RoundEnd);
 	HookEvent("arena_round_start", Event_ArenaRoundStart);
 }
 
@@ -81,19 +80,6 @@ public Action Event_RoundStart(Event event, const char[] sName, bool bDontBroadc
 	return Plugin_Continue;
 }
 
-public Action Event_RoundEnd(Event event, const char[] sName, bool bDontBroadcast)
-{
-	if (!g_cvEnabled.BoolValue)
-		return Plugin_Continue;
-	
-	if (!g_bArenaMode || !g_cvMessWithArenaRoundStates.BoolValue)
-		return Plugin_Continue;
-	
-	// If it's arena mode and we're messing with round states, well... do that
-	SendProxy_HookGameRules("m_iRoundState", Prop_Int, SendProxy_ArenaRoundState);
-	return Plugin_Continue;
-}
-	
 public Action Event_ArenaRoundStart(Event event, const char[] sName, bool bDontBroadcast)
 {
 	if (!g_cvEnabled.BoolValue)
@@ -102,8 +88,37 @@ public Action Event_ArenaRoundStart(Event event, const char[] sName, bool bDontB
 	if (!g_bArenaMode || !g_cvMessWithArenaRoundStates.BoolValue)
 		return Plugin_Continue;
 	
-	// If it's arena mode and we're messing with round states, well... do that
-	SendProxy_HookGameRules("m_iRoundState", Prop_Int, SendProxy_ArenaRoundState);
+	// If round states are being messed with, there'll be no 'cap enabled' countdown, so we have to handle it by ourselves
+	int iEntity = FindEntityByClassname(-1, "tf_logic_arena");
+	if (iEntity > MaxClients)
+	{
+		float flTime = GameRules_GetPropFloat("m_flCapturePointEnableTime") - GetGameTime();
+		
+		if (flTime > 5.0)
+			CreateTimer(flTime - 5.0, Timer_CapEnabledCountdown, 5);
+	}
+	
+	return Plugin_Continue;
+}
+
+public Action Timer_CapEnabledCountdown(Handle hTimer, int iValue)
+{
+	if (!g_cvEnabled.BoolValue)
+		return Plugin_Continue;
+	
+	if (!g_bArenaMode || !g_cvMessWithArenaRoundStates.BoolValue)
+		return Plugin_Continue;
+	
+	if (GameRules_GetRoundState() != RoundState_Stalemate)
+		return Plugin_Continue;
+	
+	char sSound[64];
+	Format(sSound, sizeof(sSound), "Announcer.RoundBegins%dSeconds", iValue);
+	EmitGameSoundToAll(sSound);
+	iValue--;
+	
+	if (iValue > 0)
+		CreateTimer(1.0, Timer_CapEnabledCountdown, iValue);
 	
 	return Plugin_Continue;
 }

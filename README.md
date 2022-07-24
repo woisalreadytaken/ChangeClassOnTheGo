@@ -6,7 +6,7 @@ It is currently missing some planned features, such as ammo and charge meter man
 ## Dependencies
 - SourceMod 1.11
 - [TF2Attributes](https://forums.alliedmods.net/showthread.php?t=210221)
-- [SlidyBat's SendProxy Manager extension fork](https://github.com/SlidyBat/sendproxy)
+- [TheByKotik's SendProxy Manager extension fork](https://github.com/TheByKotik/sendproxy)
 - [More Colors](https://forums.alliedmods.net/showthread.php?t=185016) (compile only)
 
 ## ConVars
