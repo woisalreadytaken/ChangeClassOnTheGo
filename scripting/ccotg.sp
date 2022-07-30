@@ -3,7 +3,6 @@
 #include <sdkhooks>
 #include <tf2>
 #include <tf2_stocks>
-#include <tf2attributes>
 #include <morecolors>
 #include <sendproxy>
 
@@ -146,9 +145,6 @@ public void Map_Enable()
 
 public void Disable()
 {
-	// Ideally we'd want to remove gunslinger viewmodels from snipers, but that still risks crashing the server (and client) if done mid-game lol!
-	// ...so that won't be done. They'll be stuck with it until they rejoin or the map changes
-	
 	// Unhook arena-related stuff
 	SendProxy_UnhookGameRules("m_iRoundState", SendProxy_ArenaRoundState);
 	UnhookEntityOutput("tf_logic_arena", "OnCapEnabled", EntityOutput_OnArenaCapEnabled);

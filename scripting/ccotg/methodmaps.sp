@@ -1,7 +1,5 @@
 static float g_flLastClassChange[MAXPLAYERS + 1];
 static bool g_bHasChangedClass[MAXPLAYERS + 1];
-static bool g_bHasChangedToSniper[MAXPLAYERS + 1];
-static bool g_bHasRobotArm[MAXPLAYERS + 1];
 static bool g_bIsInRespawnRoom[MAXPLAYERS + 1];
 static TFClassType g_nBufferedClass[MAXPLAYERS + 1];
 
@@ -44,30 +42,6 @@ methodmap Player
 		}
 	}
 	
-	property bool bHasChangedToSniper
-	{
-		public get()
-		{
-			return g_bHasChangedToSniper[this.iClient];
-		}
-		public set(bool bHasChangedToSniper)
-		{
-			g_bHasChangedToSniper[this.iClient] = bHasChangedToSniper;
-		}
-	}
-	
-	property bool bHasRobotArm
-	{
-		public get()
-		{
-			return g_bHasRobotArm[this.iClient];
-		}
-		public set(bool bHasRobotArm)
-		{
-			g_bHasRobotArm[this.iClient] = bHasRobotArm;
-		}
-	}
-	
 	property bool bIsInRespawnRoom
 	{
 		public get()
@@ -96,8 +70,6 @@ methodmap Player
 	{
 		this.flLastClassChange = GetGameTime();
 		this.bHasChangedClass = false;
-		this.bHasChangedToSniper = false;
-		this.bHasRobotArm = false;
 		this.bIsInRespawnRoom = false;
 		this.nBufferedClass = TFClass_Unknown;
 	}
@@ -132,20 +104,6 @@ methodmap Player
 			}
 		}
 		
-		// If switching to sniper, handle the gunslinger viewmodel before actually switching classes
-		if (nClass == TFClass_Sniper)
-		{
-			// Give him the the "mod wrench builds minisentry" attribute (before changing classes) to prevent a server crash related to specifically the Sniper's viewmodel
-			TF2Attrib_SetByName(this.iClient, "mod wrench builds minisentry", 1.0);
-			this.bHasRobotArm = true;
-		}
-		else
-		{
-			// (doing this doesn't have any effect on weapons with this attribute)
-			TF2Attrib_RemoveByName(this.iClient, "mod wrench builds minisentry");
-			this.bHasRobotArm = false;
-		}
-		
 		// Get the player's health now so it can be set properly after changing class
 		int iOldHealth = GetEntProp(this.iClient, Prop_Send, "m_iHealth");
 		int iOldMaxHealth = SDKCall_GetMaxHealth(this.iClient);
@@ -154,28 +112,8 @@ methodmap Player
 		TF2_SetPlayerClass(this.iClient, nClass, false, true);
 		TF2_RegeneratePlayer(this.iClient);
 		
-		// If the player switched to sniper, now make their non-passive weapons hidden, because the engi's hand is ugly to look at
-		if (nClass == TFClass_Sniper)
-		{
-			for (int i = TFWeaponSlot_Primary; i <= TFWeaponSlot_Melee; i++)
-			{
-				int iWeapon = GetPlayerWeaponSlot(this.iClient, i);
-				if (iWeapon > MaxClients)
-				{
-					SetEntityRenderMode(iWeapon, RENDER_TRANSCOLOR);
-					SetEntityRenderColor(iWeapon, _, _, _, 0);
-				}
-			}
-			
-			// cringe. Only show the message after switching to sniper for the first time, though
-			if (!this.bHasChangedToSniper)
-			{
-				CPrintToChat(this.iClient, "%t", "ChangeClass_Notice_Sniper");
-				this.bHasChangedToSniper = true;
-			}
-		}
 		// If switching back to engineer, check if there are any owned-but-not-really buildings and attach them back to the player
-		else if (nClass == TFClass_Engineer && g_cvKeepBuildings.BoolValue)
+		if (nClass == TFClass_Engineer && g_cvKeepBuildings.BoolValue)
 		{
 			int iBuilding = MaxClients + 1;
 			while ((iBuilding = FindEntityByClassname(iBuilding, "obj_*")) > MaxClients)

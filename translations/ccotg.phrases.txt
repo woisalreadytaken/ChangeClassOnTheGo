@@ -15,11 +15,6 @@
 		"en"		"%%dropitem%% CHANGE CLASS"
 	}
 	
-	"ChangeClass_Notice_Sniper"
-	{
-		"en"		"{red}Your Sniper weapons were made invisible to prevent server crashes. Apologies for the inconvenience."
-	}
-	
 	"ChangeClass_Wait_Cooldown"
 	{
 		"#format"	"{1:.2f}"
