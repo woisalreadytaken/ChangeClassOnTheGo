@@ -248,7 +248,7 @@ public Action EntityOutput_OnArenaCapEnabled(const char[] sOutput, int iCaller, 
 	return Plugin_Continue;
 }
 
-public Action SendProxy_ArenaRoundState(const char[] sPropName, int &iValue, int iElement, int iClient)
+public Action SendProxy_ArenaRoundState(const char[] sPropName, int &iValue, int iElement)
 {
 	if (!g_cvEnabled.BoolValue)
 		return Plugin_Continue;
