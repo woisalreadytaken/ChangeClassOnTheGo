@@ -9,7 +9,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION		"0.2"
+#define PLUGIN_VERSION		"0.3"
 
 bool g_bArenaMode;
 
