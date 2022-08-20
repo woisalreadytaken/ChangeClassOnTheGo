@@ -1,8 +1,6 @@
 # Change Class on the Go
 Scuffed pseudo-gamemode that allows everyone to change classes at will, anywhere.
 
-It is currently missing some planned features, such as ammo and charge meter management.
-
 ## Dependencies
 - SourceMod 1.11
 - [SlidyBat's SendProxy Manager extension fork](https://github.com/SlidyBat/sendproxy)
@@ -20,3 +18,4 @@ It is currently missing some planned features, such as ammo and charge meter man
 	- 2: Keep the ratio of health to max health the same
 	- Any other value: Full heal
 - `ccotg_health_max_overheal` (1.5) - Max amount of overheal (multiplier of max health) that players are allowed to keep upon changing classes.
+- `ccotg_ammo_management` (1) - Saves ammo, charge meters, heads and similar things separately for each class until death.

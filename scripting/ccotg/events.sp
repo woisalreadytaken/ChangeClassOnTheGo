@@ -1,3 +1,6 @@
+#pragma semicolon 1
+#pragma newdecls required
+
 void Event_Init()
 {
 	HookEvent("player_spawn", Event_PlayerSpawn);
@@ -18,6 +21,9 @@ public Action Event_PlayerSpawn(Event event, const char[] sName, bool bDontBroad
 	
 	// Reset the player's buffered class
 	Player(iClient).nBufferedClass = TFClass_Unknown;
+	
+	// Reset the player's class data
+	Player(iClient).ResetAllClassData();
 	
 	// If the player hasn't switched classes yet, nag them on each spawn until they do
 	if (!Player(iClient).bHasChangedClass && Player(iClient).CanTeamChangeClass())
@@ -53,7 +59,7 @@ public Action Event_RoundStart(Event event, const char[] sName, bool bDontBroadc
 			if (!Player(iClient).bHasChangedClass && Player(iClient).CanTeamChangeClass())
 			{
 				CPrintToChat(iClient, "%t", "ChangeClass_Arena_Hint");
-				PrintKeyHintText(iClient, "%t", "ChangeClass_Arena_Controls")
+				PrintKeyHintText(iClient, "%t", "ChangeClass_Arena_Controls");
 			}
 		}
 	}

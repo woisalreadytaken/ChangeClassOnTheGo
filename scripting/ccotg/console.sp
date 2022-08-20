@@ -1,3 +1,6 @@
+#pragma semicolon 1
+#pragma newdecls required
+
 void Console_Init()
 {
 	AddCommandListener(CommandListener_ChangeClass, "dropitem");

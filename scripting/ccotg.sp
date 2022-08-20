@@ -9,7 +9,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION		"0.2"
+#define PLUGIN_VERSION		"0.3"
 
 bool g_bArenaMode;
 
@@ -31,12 +31,26 @@ char g_sClassNames[view_as<int>(TFClass_Engineer) + 1][] = {
 	"engineer"
 };
 
+enum
+{
+	TF_AMMO_DUMMY = 0,
+	TF_AMMO_PRIMARY,	//General primary weapon ammo
+	TF_AMMO_SECONDARY,	//General secondary weapon ammo
+	TF_AMMO_METAL,		//Engineer's metal
+	TF_AMMO_GRENADES1,	//Weapon misc ammo 1
+	TF_AMMO_GRENADES2,	//Weapon misc ammo 2
+	TF_AMMO_GRENADES3,
+	
+	TF_AMMO_COUNT
+}
+
 ConVar g_cvEnabled;
 ConVar g_cvCooldown;
 ConVar g_cvOnlyAllowTeam;
 ConVar g_cvKeepBuildings;
 ConVar g_cvHealthMode;
 ConVar g_cvHealthMaxOverheal;
+ConVar g_cvAmmoManagement;
 ConVar g_cvPreventSwitchingDuringBadStates;
 ConVar g_cvMessWithArenaRoundStates;
 
@@ -52,9 +66,9 @@ public Plugin myinfo =
 {
 	name = "Change Class on the Go",
 	author = "wo",
-	description = "local demoknight holds m2 and can not be stopped",
+	description = "Allows players to change classes and not die out of spawn.",
 	version = PLUGIN_VERSION,
-	url = "https://steamcommunity.com/id/mmmwo/"
+	url = "https://github.com/woisalreadytaken/ChangeClassOnTheGo"
 }
 
 public void OnPluginStart()
@@ -77,6 +91,11 @@ public void OnMapStart()
 public void OnClientPutInServer(int iClient)
 {
 	Player(iClient).Reset();
+}
+
+public void OnClientDisconnect(int iClient)
+{
+	Player(iClient).Destroy();
 }
 
 public void OnPluginEnd()
@@ -149,6 +168,12 @@ public void Disable()
 	SendProxy_UnhookGameRules("m_iRoundState", SendProxy_ArenaRoundState);
 	UnhookEntityOutput("tf_logic_arena", "OnCapEnabled", EntityOutput_OnArenaCapEnabled);
 	
+	// Treat in-game clients as if they're disconnecting (frees up memory space)
+	for (int iClient = 1; iClient <= MaxClients; iClient++)
+	{
+		if (IsClientInGame(iClient))
+			OnClientDisconnect(iClient);
+	}
 	int iEntity = MaxClients + 1;
 	
 	// Unhook spawn rooms
