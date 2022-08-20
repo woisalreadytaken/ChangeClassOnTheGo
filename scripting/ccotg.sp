@@ -66,9 +66,9 @@ public Plugin myinfo =
 {
 	name = "Change Class on the Go",
 	author = "wo",
-	description = "local demoknight holds m2 and can not be stopped",
+	description = "Allows players to change classes and not die out of spawn.",
 	version = PLUGIN_VERSION,
-	url = "https://steamcommunity.com/id/mmmwo/"
+	url = "https://github.com/woisalreadytaken/ChangeClassOnTheGo"
 }
 
 public void OnPluginStart()
