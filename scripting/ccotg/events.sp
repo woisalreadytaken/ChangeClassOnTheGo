@@ -1,3 +1,6 @@
+#pragma semicolon 1
+#pragma newdecls required
+
 void Event_Init()
 {
 	HookEvent("player_spawn", Event_PlayerSpawn);
@@ -56,7 +59,7 @@ public Action Event_RoundStart(Event event, const char[] sName, bool bDontBroadc
 			if (!Player(iClient).bHasChangedClass && Player(iClient).CanTeamChangeClass())
 			{
 				CPrintToChat(iClient, "%t", "ChangeClass_Arena_Hint");
-				PrintKeyHintText(iClient, "%t", "ChangeClass_Arena_Controls")
+				PrintKeyHintText(iClient, "%t", "ChangeClass_Arena_Controls");
 			}
 		}
 	}

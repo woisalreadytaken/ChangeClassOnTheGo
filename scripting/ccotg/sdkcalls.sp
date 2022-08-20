@@ -1,3 +1,6 @@
+#pragma semicolon 1
+#pragma newdecls required
+
 static Handle g_hSDKCallGetMaxHealth;
 static Handle g_hSDKCallAddObject;
 static Handle g_hSDKCallRemoveObject;

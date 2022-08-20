@@ -1,3 +1,6 @@
+#pragma semicolon 1
+#pragma newdecls required
+
 public Action SDKHook_FuncRespawnRoom_StartTouch(int iEntity, int iClient)
 {
 	if (g_bArenaMode)

@@ -1,3 +1,6 @@
+#pragma semicolon 1
+#pragma newdecls required
+
 stock any Min(any a, any b)
 {
 	return (a <= b) ? a : b;

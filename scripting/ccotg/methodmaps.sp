@@ -1,3 +1,6 @@
+#pragma semicolon 1
+#pragma newdecls required
+
 static float g_flLastClassChange[MAXPLAYERS + 1];
 static bool g_bHasChangedClass[MAXPLAYERS + 1];
 static bool g_bIsInRespawnRoom[MAXPLAYERS + 1];

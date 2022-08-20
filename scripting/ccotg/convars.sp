@@ -1,3 +1,6 @@
+#pragma semicolon 1
+#pragma newdecls required
+
 void ConVar_Init()
 {
 	g_cvEnabled = CreateConVar("ccotg_enabled", "1", "Is 'Change Class on the Go' enabled?", _, true, 0.0, true, 1.0);
