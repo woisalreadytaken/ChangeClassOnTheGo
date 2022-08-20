@@ -193,6 +193,9 @@ methodmap Player
 	
 	public void StoreClassData(TFClassType nClass)
 	{
+		if (!g_cvAmmoManagement.BoolValue)
+			return;
+		
 		ClassData data;
 		data.nClass = nClass;
 		
@@ -309,6 +312,9 @@ methodmap Player
 	
 	public void ApplyClassData(TFClassType nClass)
 	{
+		if (!g_cvAmmoManagement.BoolValue)
+			return;
+		
 		int iValue = g_aClassData[this.iClient].FindValue(nClass, ClassData::nClass);
 		
 		// Haven't played this class yet, set things that would normally transfer over to 0
