@@ -27,7 +27,6 @@ enum struct ClassData
 	bool bRageDraining;
 	bool bUbercharging;
 	
-	int iSpell;
 	float flLastSwitch;
 }
 
@@ -91,6 +90,18 @@ methodmap Player
 		public set(TFClassType nBufferedClass)
 		{
 			g_nBufferedClass[this.iClient] = nBufferedClass;
+		}
+	}
+	
+	property ArrayList aClassData
+	{
+		public get()
+		{
+			return g_aClassData[this.iClient];
+		}
+		public set(ArrayList aClassData)
+		{
+			g_aClassData[this.iClient] = aClassData;
 		}
 	}
 	
