@@ -1,8 +1,6 @@
 # Change Class on the Go
 Scuffed pseudo-gamemode that allows everyone to change classes at will, anywhere.
 
-It is currently missing some planned features, such as ammo and charge meter management.
-
 ## Dependencies
 - SourceMod 1.11
 - [SlidyBat's SendProxy Manager extension fork](https://github.com/SlidyBat/sendproxy)
