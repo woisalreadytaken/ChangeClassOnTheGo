@@ -1,3 +1,13 @@
+stock any Min(any a, any b)
+{
+	return (a <= b) ? a : b;
+}
+
+stock any Max(any a, any b)
+{
+	return (a >= b) ? a : b;
+}
+
 stock bool IsValidClient(int iClient)
 {
 	return 0 < iClient <= MaxClients && IsClientInGame(iClient);
@@ -20,6 +30,21 @@ stock void PrintKeyHintText(int iClient, const char[] sFormat, any...)
 	bf.WriteByte(1);	//One message
 	bf.WriteString(sBuffer);
 	EndMessage();
+}
+
+stock int TF2_GetItemInSlot(int iClient, int iSlot)
+{
+	int iWeapon = GetPlayerWeaponSlot(iClient, iSlot);
+	if (!IsValidEdict(iWeapon))
+	{
+		// If a weapon was not found in slot, check if it's a wearable
+		int iWearable = SDKCall_GetEquippedWearableForLoadoutSlot(iClient, iSlot);
+		
+		if (IsValidEdict(iWearable))
+			iWeapon = iWearable;
+	}
+	
+	return iWeapon;
 }
 
 stock int ShowParticle(char[] sParticle, float flDuration, float vecPos[3], float vecAngles[3] = NULL_VECTOR)

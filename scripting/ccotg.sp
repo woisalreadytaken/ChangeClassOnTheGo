@@ -31,6 +31,19 @@ char g_sClassNames[view_as<int>(TFClass_Engineer) + 1][] = {
 	"engineer"
 };
 
+enum
+{
+	TF_AMMO_DUMMY = 0,
+	TF_AMMO_PRIMARY,	//General primary weapon ammo
+	TF_AMMO_SECONDARY,	//General secondary weapon ammo
+	TF_AMMO_METAL,		//Engineer's metal
+	TF_AMMO_GRENADES1,	//Weapon misc ammo 1
+	TF_AMMO_GRENADES2,	//Weapon misc ammo 2
+	TF_AMMO_GRENADES3,
+	
+	TF_AMMO_COUNT
+}
+
 ConVar g_cvEnabled;
 ConVar g_cvCooldown;
 ConVar g_cvOnlyAllowTeam;
@@ -77,6 +90,11 @@ public void OnMapStart()
 public void OnClientPutInServer(int iClient)
 {
 	Player(iClient).Reset();
+}
+
+public void OnClientDisconnect(int iClient)
+{
+	Player(iClient).Destroy();
 }
 
 public void OnPluginEnd()
@@ -149,6 +167,12 @@ public void Disable()
 	SendProxy_UnhookGameRules("m_iRoundState", SendProxy_ArenaRoundState);
 	UnhookEntityOutput("tf_logic_arena", "OnCapEnabled", EntityOutput_OnArenaCapEnabled);
 	
+	// Treat in-game clients as if they're disconnecting (frees up memory space)
+	for (int iClient = 1; iClient <= MaxClients; iClient++)
+	{
+		if (IsClientInGame(iClient))
+			OnClientDisconnect(iClient);
+	}
 	int iEntity = MaxClients + 1;
 	
 	// Unhook spawn rooms

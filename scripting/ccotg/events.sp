@@ -19,6 +19,9 @@ public Action Event_PlayerSpawn(Event event, const char[] sName, bool bDontBroad
 	// Reset the player's buffered class
 	Player(iClient).nBufferedClass = TFClass_Unknown;
 	
+	// Reset the player's class data
+	Player(iClient).ResetAllClassData();
+	
 	// If the player hasn't switched classes yet, nag them on each spawn until they do
 	if (!Player(iClient).bHasChangedClass && Player(iClient).CanTeamChangeClass())
 		PrintCenterText(iClient, "%t", "ChangeClass_Main_Hint");
