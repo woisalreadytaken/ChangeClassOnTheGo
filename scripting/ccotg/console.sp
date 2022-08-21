@@ -45,7 +45,7 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	if (!IsValidClient(iClient) || !IsPlayerAlive(iClient))
 		return Plugin_Continue;
 	
-	if (Player(iClient).bIsInRespawnRoom || GameRules_GetRoundState() == RoundState_Preround)
+	if ((Player(iClient).bIsInRespawnRoom && !g_cvAmmoManagement.BoolValue) || GameRules_GetRoundState() == RoundState_Preround)
 		return Plugin_Continue;
 	
 	if (!Player(iClient).CanTeamChangeClass())
