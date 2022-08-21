@@ -501,7 +501,7 @@ methodmap Player
 			return bResult;
 		
 		// TFCond_RocketPack makes the looping woosh sound persist until you switch back to Pyro (or die)
-		if (TF2_IsPlayerInCondition(this.iClient, TFCond_RocketPack))
+		if (TF2_IsPlayerInCondition(this.iClient, TFCond_RocketPack) && TF2_GetPlayerClass(this.iClient) == TFClass_Pyro)
 		{
 			if (bDisplayText)
 				CPrintToChat(this.iClient, "%t", "ChangeClass_Wait_BadState_Jetpacking");
