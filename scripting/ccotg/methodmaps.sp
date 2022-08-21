@@ -390,7 +390,7 @@ methodmap Player
 				{
 					if (StrEqual(sClassname, "tf_weapon_particle_cannon") || StrEqual(sClassname, "tf_weapon_drg_pomson"))
 					{
-						SetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy", data.flWeaponChargeMeter[i]);
+						SetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy", Min(data.flWeaponChargeMeter[i], 20.0));
 					}
 					else
 					{
@@ -408,7 +408,7 @@ methodmap Player
 					}
 					else if (StrEqual(sClassname, "tf_weapon_raygun"))
 					{
-						SetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy", data.flWeaponChargeMeter[i]);
+						SetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy", Min(data.flWeaponChargeMeter[i], 20.0));
 					}
 					else if (StrEqual(sClassname, "tf_weapon_charged_smg"))
 					{
@@ -421,7 +421,8 @@ methodmap Player
 					}
 					else
 					{
-						SetEntPropFloat(this.iClient, Prop_Send, "m_flItemChargeMeter", data.flWeaponChargeMeter[i], i);
+						if (data.flWeaponChargeMeter[i] > 0.0)
+							SetEntPropFloat(this.iClient, Prop_Send, "m_flItemChargeMeter", data.flWeaponChargeMeter[i], i);
 					}
 				}
 				
