@@ -48,6 +48,7 @@ ConVar g_cvEnabled;
 ConVar g_cvCooldown;
 ConVar g_cvOnlyAllowTeam;
 ConVar g_cvKeepBuildings;
+ConVar g_cvKeepMomentum;
 ConVar g_cvHealthMode;
 ConVar g_cvHealthMaxOverheal;
 ConVar g_cvAmmoManagement;

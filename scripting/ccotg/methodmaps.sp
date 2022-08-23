@@ -195,6 +195,10 @@ methodmap Player
 		// Set final health
 		SetEntProp(this.iClient, Prop_Send, "m_iHealth", iFinalHealth);
 		
+		// Remove momentum, if the convar is disabled
+		if (!g_cvKeepMomentum.BoolValue)
+			TeleportEntity(this.iClient, NULL_VECTOR, NULL_VECTOR, {0.0, 0.0, 0.0});
+		
 		// Add a little effect
 		float vecPos[3];
 		GetClientAbsOrigin(this.iClient, vecPos);
