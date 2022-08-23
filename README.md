@@ -22,4 +22,4 @@ Scuffed pseudo-gamemode that allows everyone to change classes at will, anywhere
 |`ccotg_ammo_management`|1|Saves ammo, charge meters, heads and similar things separately for each class until death.|
 
 ## Thanks To
-* [42](https://github.com/FortyTwoFortyTwo), [Mikusch](https://github.com/Mikusch) & [Red Sun Over Paradise](https://redsun.tf) for helping me out with public playtesting and feedback.
+* [42](https://github.com/FortyTwoFortyTwo), [Mikusch](https://github.com/Mikusch) & [Red Sun Over Paradise](https://redsun.tf) for helping me out with public playtesting and providing feedback.
