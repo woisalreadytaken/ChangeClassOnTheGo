@@ -9,7 +9,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION		"0.3"
+#define PLUGIN_VERSION	"0.3"
 
 bool g_bArenaMode;
 
@@ -290,4 +290,3 @@ public Action SendProxy_ArenaRoundState(const char[] sPropName, int &iValue, int
 	
 	return Plugin_Continue;
 }
-	
