@@ -9,7 +9,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION	"0.3"
+#define PLUGIN_VERSION	"0.4"
 
 bool g_bArenaMode;
 
@@ -176,6 +176,7 @@ public void Disable()
 		if (IsClientInGame(iClient))
 			OnClientDisconnect(iClient);
 	}
+	
 	int iEntity = MaxClients + 1;
 	
 	// Unhook spawn rooms
