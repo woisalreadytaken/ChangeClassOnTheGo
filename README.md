@@ -9,6 +9,7 @@ Scuffed pseudo-gamemode that allows everyone to change classes at will, anywhere
 ## ConVars
 - `ccotg_enabled` (1) - Is 'Change Class on the Go' enabled?
 - `ccotg_cooldown` (0.0) - Amount of time (in seconds!) required for a player to be allowed to change classes again.
+- `ccotg_particle` (1) - Adds a team-coloured particle effect for switching classes.
 - `ccotg_only_allow_team` ("") - Only allows the specified team to make use of this plugin's functionality. Accepts 'red' and 'blu(e)', anything else means we'll assume you're fine with both teams.
 - `ccotg_keep_buildings` (1) - Lets buildings stay on the map if a player switches from Engineer. Disabling makes them get destroyed instead.
 - `ccotg_keep_momentum` (1) - Players keep momentum after switching classes.

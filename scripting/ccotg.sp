@@ -46,6 +46,7 @@ enum
 
 ConVar g_cvEnabled;
 ConVar g_cvCooldown;
+ConVar g_cvParticle;
 ConVar g_cvOnlyAllowTeam;
 ConVar g_cvKeepBuildings;
 ConVar g_cvKeepMomentum;

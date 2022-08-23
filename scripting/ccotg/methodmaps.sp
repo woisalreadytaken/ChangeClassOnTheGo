@@ -199,10 +199,13 @@ methodmap Player
 		if (!g_cvKeepMomentum.BoolValue)
 			TeleportEntity(this.iClient, NULL_VECTOR, NULL_VECTOR, {0.0, 0.0, 0.0});
 		
-		// Add a little effect
-		float vecPos[3];
-		GetClientAbsOrigin(this.iClient, vecPos);
-		ShowParticle(TF2_GetClientTeam(this.iClient) == TFTeam_Blue ? "teleportedin_blue" : "teleportedin_red", 0.1, vecPos);
+		// Add a little effect, if set
+		if (g_cvParticle.BoolValue)
+		{
+			float vecPos[3];
+			GetClientAbsOrigin(this.iClient, vecPos);
+			ShowParticle(TF2_GetClientTeam(this.iClient) == TFTeam_Blue ? "teleportedin_blue" : "teleportedin_red", 0.1, vecPos);
+		}
 		
 		// Update properties
 		this.flLastClassChange = GetGameTime();

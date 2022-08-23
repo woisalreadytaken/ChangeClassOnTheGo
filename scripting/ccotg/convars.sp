@@ -6,6 +6,7 @@ void ConVar_Init()
 	g_cvEnabled = CreateConVar("ccotg_enabled", "1", "Is 'Change Class on the Go' enabled?", _, true, 0.0, true, 1.0);
 	g_cvEnabled.AddChangeHook(ConVar_EnabledChanged);
 	g_cvCooldown = CreateConVar("ccotg_cooldown", "0.0", "Amount of time (in seconds!) required for a player to be allowed to change classes again.");
+	g_cvParticle = CreateConVar("ccotg_particle", "1", "Adds a team-coloured particle effect for switching classes.");
 	g_cvOnlyAllowTeam = CreateConVar("ccotg_only_allow_team", "", "Only allows the specified team to make use of this plugin's functionality. Accepts 'red' and 'blu(e)', anything else means we'll assume you're fine with both teams.");
 	g_cvOnlyAllowTeam.AddChangeHook(ConVar_OnlyAllowTeamChanged);
 	g_cvKeepBuildings = CreateConVar("ccotg_keep_buildings", "1", "Lets buildings stay on the map if a player switches from Engineer. Disabling makes them get destroyed instead.");
