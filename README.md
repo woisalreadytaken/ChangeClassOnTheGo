@@ -20,3 +20,6 @@ Scuffed pseudo-gamemode that allows everyone to change classes at will, anywhere
 |`ccotg_health_mode`|1|How should health be handled upon changing classes?<br>- 1: Don't change health<br>- 2: Keep the ratio of health to max health the same<br>- Any other value: Full heal|
 |`ccotg_health_max_overheal`|1.5|Max amount of overheal (multiplier of max health) that players are allowed to keep upon changing classes.|
 |`ccotg_ammo_management`|1|Saves ammo, charge meters, heads and similar things separately for each class until death.|
+
+## Thanks To
+* [42](https://github.com/FortyTwoFortyTwo), [Mikusch](https://github.com/Mikusch) & [Red Sun Over Paradise](https://redsun.tf) for helping me out with public playtesting and feedback.
