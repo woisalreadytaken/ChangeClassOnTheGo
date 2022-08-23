@@ -195,10 +195,17 @@ methodmap Player
 		// Set final health
 		SetEntProp(this.iClient, Prop_Send, "m_iHealth", iFinalHealth);
 		
-		// Add a little effect
-		float vecPos[3];
-		GetClientAbsOrigin(this.iClient, vecPos);
-		ShowParticle(TF2_GetClientTeam(this.iClient) == TFTeam_Blue ? "teleportedin_blue" : "teleportedin_red", 0.1, vecPos);
+		// Remove momentum, if the convar is disabled
+		if (!g_cvKeepMomentum.BoolValue)
+			TeleportEntity(this.iClient, NULL_VECTOR, NULL_VECTOR, {0.0, 0.0, 0.0});
+		
+		// Add a little effect, if set
+		if (g_cvParticle.BoolValue)
+		{
+			float vecPos[3];
+			GetClientAbsOrigin(this.iClient, vecPos);
+			ShowParticle(TF2_GetClientTeam(this.iClient) == TFTeam_Blue ? "teleportedin_blue" : "teleportedin_red", 0.1, vecPos);
+		}
 		
 		// Update properties
 		this.flLastClassChange = GetGameTime();
@@ -390,7 +397,7 @@ methodmap Player
 				{
 					if (StrEqual(sClassname, "tf_weapon_particle_cannon") || StrEqual(sClassname, "tf_weapon_drg_pomson"))
 					{
-						SetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy", data.flWeaponChargeMeter[i]);
+						SetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy", Min(data.flWeaponChargeMeter[i], 20.0));
 					}
 					else
 					{
@@ -408,7 +415,7 @@ methodmap Player
 					}
 					else if (StrEqual(sClassname, "tf_weapon_raygun"))
 					{
-						SetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy", data.flWeaponChargeMeter[i]);
+						SetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy", Min(data.flWeaponChargeMeter[i], 20.0));
 					}
 					else if (StrEqual(sClassname, "tf_weapon_charged_smg"))
 					{
@@ -421,7 +428,8 @@ methodmap Player
 					}
 					else
 					{
-						SetEntPropFloat(this.iClient, Prop_Send, "m_flItemChargeMeter", data.flWeaponChargeMeter[i], i);
+						if (data.flWeaponChargeMeter[i] > 0.0)
+							SetEntPropFloat(this.iClient, Prop_Send, "m_flItemChargeMeter", data.flWeaponChargeMeter[i], i);
 					}
 				}
 				
@@ -500,7 +508,7 @@ methodmap Player
 			return bResult;
 		
 		// TFCond_RocketPack makes the looping woosh sound persist until you switch back to Pyro (or die)
-		if (TF2_IsPlayerInCondition(this.iClient, TFCond_RocketPack))
+		if (TF2_IsPlayerInCondition(this.iClient, TFCond_RocketPack) && TF2_GetPlayerClass(this.iClient) == TFClass_Pyro)
 		{
 			if (bDisplayText)
 				CPrintToChat(this.iClient, "%t", "ChangeClass_Wait_BadState_Jetpacking");

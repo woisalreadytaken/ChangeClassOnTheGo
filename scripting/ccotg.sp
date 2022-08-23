@@ -9,7 +9,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION		"0.3"
+#define PLUGIN_VERSION	"0.4"
 
 bool g_bArenaMode;
 
@@ -46,8 +46,10 @@ enum
 
 ConVar g_cvEnabled;
 ConVar g_cvCooldown;
+ConVar g_cvParticle;
 ConVar g_cvOnlyAllowTeam;
 ConVar g_cvKeepBuildings;
+ConVar g_cvKeepMomentum;
 ConVar g_cvHealthMode;
 ConVar g_cvHealthMaxOverheal;
 ConVar g_cvAmmoManagement;
@@ -174,6 +176,7 @@ public void Disable()
 		if (IsClientInGame(iClient))
 			OnClientDisconnect(iClient);
 	}
+	
 	int iEntity = MaxClients + 1;
 	
 	// Unhook spawn rooms
@@ -290,4 +293,3 @@ public Action SendProxy_ArenaRoundState(const char[] sPropName, int &iValue, int
 	
 	return Plugin_Continue;
 }
-	

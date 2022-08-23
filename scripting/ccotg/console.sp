@@ -19,7 +19,7 @@ public Action CommandListener_ChangeClass(int iClient, const char[] sCommand, in
 	if (!IsValidClient(iClient) || !IsPlayerAlive(iClient))
 		return Plugin_Continue;
 	
-	// This is the fallback in case the convar for messing with round states is disabled. Players will need to press the dropitem keybind to change classes instead	
+	// This is the fallback in case the convar for messing with round states is disabled. Players will need to press the dropitem keybind to change classes instead
 	char sVGUIMenu[16];
 	TFTeam nTeam = TF2_GetClientTeam(iClient);
 	
@@ -36,7 +36,7 @@ public Action CommandListener_ChangeClass(int iClient, const char[] sCommand, in
 	
 	return Plugin_Continue;
 }
-	
+
 public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int iArgs)
 {
 	if (!g_cvEnabled.BoolValue)
@@ -45,7 +45,7 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	if (!IsValidClient(iClient) || !IsPlayerAlive(iClient))
 		return Plugin_Continue;
 	
-	if (Player(iClient).bIsInRespawnRoom || GameRules_GetRoundState() == RoundState_Preround)
+	if ((Player(iClient).bIsInRespawnRoom && g_cvAmmoManagement.BoolValue) || GameRules_GetRoundState() == RoundState_Preround)
 		return Plugin_Continue;
 	
 	if (!Player(iClient).CanTeamChangeClass())
@@ -78,7 +78,7 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 		
 		while (nRandomClass == nCurrentClass)
 			nRandomClass = view_as<TFClassType>(GetRandomInt(view_as<int>(TFClass_Scout), view_as<int>(TFClass_Engineer)));
-			
+		
 		strcopy(sClass, sizeof(sClass), g_sClassNames[view_as<int>(nRandomClass)]);
 	}
 	
@@ -89,7 +89,7 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	if (Player(iClient).IsInCooldown(!bSameClass))
 	{
 		Player(iClient).nBufferedClass = nNewClass;
-			
+		
 		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, iClient);
 		return Plugin_Handled;
 	}
