@@ -14,7 +14,7 @@ void ConVar_Init()
 	g_cvHealthMode = CreateConVar("ccotg_health_mode", "1", "How should health be handled upon changing classes?\n1: Don't change health\n2: Keep the ratio of health to max health the same\nAny other value: Full heal");
 	g_cvHealthMaxOverheal = CreateConVar("ccotg_health_max_overheal", "1.5", "Max amount of overheal (multiplier of max health) that players are allowed to keep upon changing classes.");
 	g_cvAmmoManagement = CreateConVar("ccotg_ammo_management", "1", "Saves ammo, charge meters, heads and similar things separately for each class until death.");
-	g_cvPreventSwitchingDuringBadStates = CreateConVar("ccotg_prevent_switching_during_bad_states", "1", "Lazy temporary beta convar - disallows switching classes if are doing following: Jetpacking (to prevent a persistent looping sound bug) and hauling a building (does some bad animation stuff)");
+	g_cvPreventSwitchingDuringBadStates = CreateConVar("ccotg_restrict_broken_conditions", "1", "Disallows switching classes if players are jetpacking (to prevent a persistent looping sound bug) or hauling a building (does some bad animation stuff)");
 	g_cvMessWithArenaRoundStates = CreateConVar("ccotg_arena_change_round_states", "1", "Pretend to change the round state in arena mode so players can use the default 'changeclass' key mid round. Visually, slightly breaks the central Control Point! Disabling will let players change classes with their 'dropitem' key as a fallback instead.");
 	g_cvMessWithArenaRoundStates.AddChangeHook(ConVar_MessWithArenaRoundStatesChanged);
 }
