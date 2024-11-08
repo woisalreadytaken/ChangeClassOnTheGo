@@ -45,7 +45,7 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	if (!IsValidClient(iClient) || !IsPlayerAlive(iClient))
 		return Plugin_Continue;
 	
-	if ((Player(iClient).bIsInRespawnRoom && g_cvAmmoManagement.BoolValue) || GameRules_GetRoundState() == RoundState_Preround)
+	if (GameRules_GetRoundState() == RoundState_Preround)
 		return Plugin_Continue;
 	
 	if (!Player(iClient).CanTeamChangeClass())
@@ -55,7 +55,6 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	GetCmdArg(1, sClass, sizeof(sClass));
 	StrToLower(sClass);
 	
-	// Check if the class typed is valid
 	bool bValidClass = false;
 	for (int i = view_as<int>(TFClass_Unknown); i <= view_as<int>(TFClass_Engineer); i++)
 	{
@@ -90,7 +89,7 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	{
 		Player(iClient).nBufferedClass = nNewClass;
 		
-		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, iClient);
+		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, GetClientSerial(iClient), TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 		return Plugin_Handled;
 	}
 	
@@ -99,7 +98,7 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	{
 		Player(iClient).nBufferedClass = nNewClass;
 		
-		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, iClient);
+		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, GetClientSerial(iClient), TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 		return Plugin_Handled;
 	}
 	
