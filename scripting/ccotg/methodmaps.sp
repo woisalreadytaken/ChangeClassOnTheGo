@@ -225,9 +225,6 @@ methodmap Player
 			
 			if (flDuration > 0.0)
 			{
-				char sName[64];
-				TF2Util_GetConditionName(nCond, sName, 64);
-				PrintToConsole(this.iClient, "Storing condtition %s: inflictor %d duration %.2f", sName, iInflictor, flDuration);
 				ConditionData data;
 				data.nCond = nCond;
 				data.iInflictor = iInflictor;
