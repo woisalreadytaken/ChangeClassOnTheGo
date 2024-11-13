@@ -34,6 +34,14 @@ enum struct ClassData
 	float flLastSwitch;
 }
 
+enum struct ConditionData
+{
+	TFCond nCond;
+	
+	int iInflictor;
+	float flDuration;
+}
+
 methodmap Player
 {
 	public Player(int iClient)
@@ -184,12 +192,89 @@ methodmap Player
 		// Store ammo, charge meters and the like
 		this.StoreClassData(nCurrentClass);
 		
+		// Store ongoing (temporary) condition data
+		ArrayList aConditions = new ArrayList(sizeof(ConditionData));
+		
+		for (TFCond nCond = TFCond_Slowed; nCond <= TF2Util_GetLastCondition(); nCond++)
+		{
+			int iInflictor = TF2Util_GetPlayerConditionProvider(this.iClient, nCond);
+			float flDuration;
+			
+			switch (nCond)
+			{
+				case TFCond_OnFire, TFCond_BurningPyro:
+				{
+					flDuration = TF2Util_GetPlayerBurnDuration(this.iClient);
+				}
+				
+				case TFCond_Bleeding:
+				{
+					int iBleedCount = TF2Util_GetPlayerActiveBleedCount(this.iClient);
+					if (iBleedCount > 0)
+					{
+						iInflictor = TF2Util_GetPlayerBleedAttacker(this.iClient, iBleedCount - 1);
+						flDuration = TF2Util_GetPlayerBleedDuration(this.iClient, iBleedCount - 1);
+					}
+				}
+				
+				default:
+				{
+					flDuration = TF2Util_GetPlayerConditionDuration(this.iClient, nCond);
+				}
+			}
+			
+			if (flDuration > 0.0)
+			{
+				char sName[64];
+				TF2Util_GetConditionName(nCond, sName, 64);
+				PrintToConsole(this.iClient, "Storing condtition %s: inflictor %d duration %.2f", sName, iInflictor, flDuration);
+				ConditionData data;
+				data.nCond = nCond;
+				data.iInflictor = iInflictor;
+				data.flDuration = flDuration;
+				aConditions.PushArray(data);
+			}
+		}
+		
 		// Change classes!
 		TF2_SetPlayerClass(this.iClient, nClass, false, true);
 		TF2_RegeneratePlayer(this.iClient);
 		
 		// Retrieve ammo, charge meters and the like if we've already played the class we're switching to before
 		this.ApplyClassData(nClass);
+		
+		// Give conditions back
+		for (int i = 0; i < aConditions.Length; i++)
+		{
+			ConditionData data;
+			aConditions.GetArray(i, data);
+			
+			TF2_AddCondition(this.iClient, data.nCond, data.flDuration, data.iInflictor);
+			
+			switch (data.nCond)
+			{
+				case TFCond_OnFire, TFCond_BurningPyro:
+				{
+					if (data.iInflictor > 0)
+						TF2Util_IgnitePlayer(this.iClient, data.iInflictor, data.flDuration);
+				}
+				
+				case TFCond_Bleeding:
+				{
+					if (data.iInflictor > 0)
+						TF2Util_MakePlayerBleed(this.iClient, data.iInflictor, data.flDuration);
+				}
+			}
+		}
+		
+		delete aConditions;
+		
+		if (TF2_IsPlayerInCondition(this.iClient, TFCond_MeleeOnly) || TF2_IsPlayerInCondition(this.iClient, TFCond_RestrictToMelee))
+		{
+			int iMelee = GetPlayerWeaponSlot(this.iClient, TFWeaponSlot_Melee);
+			if (iMelee > MaxClients)
+				TF2Util_SetPlayerActiveWeapon(this.iClient, iMelee);
+		}
 		
 		// If switching back to engineer, check if there are any owned-but-not-really buildings and attach them back to the player
 		if (nClass == TFClass_Engineer && g_cvKeepBuildings.BoolValue)
@@ -206,7 +291,7 @@ methodmap Player
 		int iNewMaxHealth = SDKCall_GetMaxHealth(this.iClient);
 		int iFinalHealth;
 		
-		switch(g_cvHealthMode.IntValue)
+		switch (g_cvHealthMode.IntValue)
 		{
 			// Keep the same health
 			case 1: iFinalHealth = iOldHealth;
@@ -253,7 +338,7 @@ methodmap Player
 		// Get client ent props
 		
 		// Class-specific
-		switch(nClass)
+		switch (nClass)
 		{
 			case TFClass_Scout: data.flHype = GetEntPropFloat(this.iClient, Prop_Send, "m_flHypeMeter");
 			case TFClass_DemoMan: data.flChargeMeter = GetEntPropFloat(this.iClient, Prop_Send, "m_flChargeMeter");
@@ -434,7 +519,7 @@ methodmap Player
 			GetEntityClassname(iWeapon, sClassname, sizeof(sClassname));
 			
 			// Apply weapon-specific charge meters
-			switch(i)
+			switch (i)
 			{
 				case TFWeaponSlot_Primary:
 				{

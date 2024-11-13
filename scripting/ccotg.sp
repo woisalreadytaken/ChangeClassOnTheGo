@@ -3,6 +3,7 @@
 #include <sdkhooks>
 #include <tf2>
 #include <tf2_stocks>
+#include <tf2utils>
 #include <morecolors>
 #include <sendproxy>
 

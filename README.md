@@ -3,6 +3,7 @@ Scuffed pseudo-gamemode that allows everyone to change classes at will, anywhere
 
 ## Dependencies
 - SourceMod 1.11
+- [TF2 Utils](https://github.com/nosoop/SM-TFUtils)
 - [SlidyBat's SendProxy Manager extension fork](https://github.com/SlidyBat/sendproxy)
 - [More Colors](https://forums.alliedmods.net/showthread.php?t=185016) (compile only)
 
