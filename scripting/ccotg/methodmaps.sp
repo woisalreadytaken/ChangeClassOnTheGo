@@ -236,6 +236,8 @@ methodmap Player
 		// Change classes!
 		TF2_SetPlayerClass(this.iClient, nClass, false, true);
 		TF2_RegeneratePlayer(this.iClient);
+		SetVariantString("");
+		AcceptEntityInput(this.iClient, "SetCustomModel");
 		
 		// Retrieve ammo, charge meters and the like if we've already played the class we're switching to before
 		this.ApplyClassData(nClass);
