@@ -48,7 +48,6 @@ ConVar g_cvKeepBuildings;
 ConVar g_cvKeepMomentum;
 ConVar g_cvHealthMode;
 ConVar g_cvHealthMaxOverheal;
-ConVar g_cvAmmoManagement;
 ConVar g_cvPreventSwitchingDuringBadStates;
 
 #include "ccotg/console.sp"
