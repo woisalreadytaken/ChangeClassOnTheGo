@@ -34,14 +34,6 @@ enum struct ClassData
 	float flLastSwitch;
 }
 
-enum struct ConditionData
-{
-	TFCond nCond;
-	
-	int iInflictor;
-	float flDuration;
-}
-
 methodmap Player
 {
 	public Player(int iClient)
