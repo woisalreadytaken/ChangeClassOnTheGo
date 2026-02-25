@@ -13,13 +13,13 @@ public Action CommandListener_ChangeClass(int iClient, const char[] sCommand, in
 	if (!g_cvEnabled.BoolValue)
 		return Plugin_Continue;
 	
-	if (!g_bArenaMode || g_cvMessWithArenaRoundStates.BoolValue)
+	if (!g_bArenaMode)
 		return Plugin_Continue;
 	
 	if (!IsValidClient(iClient) || !IsPlayerAlive(iClient))
 		return Plugin_Continue;
 	
-	// This is the fallback in case the convar for messing with round states is disabled. Players will need to press the dropitem keybind to change classes instead
+	// Players will need to press the dropitem keybind to change classes in arena mode, since they can't bring up the change class menu (and it's clientside)
 	char sVGUIMenu[16];
 	TFTeam nTeam = TF2_GetClientTeam(iClient);
 	
@@ -45,7 +45,23 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	if (!IsValidClient(iClient) || !IsPlayerAlive(iClient))
 		return Plugin_Continue;
 	
-	if ((Player(iClient).bIsInRespawnRoom && g_cvAmmoManagement.BoolValue) || GameRules_GetRoundState() == RoundState_Preround)
+	if (Player(iClient).bIsInRespawnRoom)
+	{
+		// Detach buildings from the engineers so they don't lose them
+		if (TF2_GetPlayerClass(iClient) == TFClass_Engineer && g_cvKeepBuildings.BoolValue)
+		{
+			int iBuilding = MaxClients + 1;
+			while ((iBuilding = FindEntityByClassname(iBuilding, "obj_*")) > MaxClients)
+			{
+				if (GetEntPropEnt(iBuilding, Prop_Send, "m_hBuilder") == iClient)
+					SDKCall_RemoveObject(iClient, iBuilding);
+			}
+		}
+		
+		return Plugin_Continue;
+	}
+	
+	if (GameRules_GetRoundState() == RoundState_Preround)
 		return Plugin_Continue;
 	
 	if (!Player(iClient).CanTeamChangeClass())
@@ -55,7 +71,6 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	GetCmdArg(1, sClass, sizeof(sClass));
 	StrToLower(sClass);
 	
-	// Check if the class typed is valid
 	bool bValidClass = false;
 	for (int i = view_as<int>(TFClass_Unknown); i <= view_as<int>(TFClass_Engineer); i++)
 	{
@@ -90,7 +105,7 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	{
 		Player(iClient).nBufferedClass = nNewClass;
 		
-		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, iClient);
+		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, GetClientSerial(iClient), TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 		return Plugin_Handled;
 	}
 	
@@ -99,7 +114,7 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	{
 		Player(iClient).nBufferedClass = nNewClass;
 		
-		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, iClient);
+		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, GetClientSerial(iClient), TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 		return Plugin_Handled;
 	}
 	

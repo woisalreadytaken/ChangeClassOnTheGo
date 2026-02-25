@@ -2,6 +2,8 @@
 #pragma newdecls required
 
 static float g_flLastClassChange[MAXPLAYERS + 1];
+static float g_flLastReset[MAXPLAYERS + 1];
+static bool g_bIsChangingClass[MAXPLAYERS + 1];
 static bool g_bHasChangedClass[MAXPLAYERS + 1];
 static bool g_bIsInRespawnRoom[MAXPLAYERS + 1];
 static TFClassType g_nBufferedClass[MAXPLAYERS + 1];
@@ -14,7 +16,9 @@ enum struct ClassData
 	int iClip[3];
 	int iAmmo[TF_AMMO_COUNT];
 	float flWeaponChargeMeter[3];
+	float flWeaponCooldown[3];
 	float flWeaponChargeTime[3];
+	float flWeaponEnergy[3];
 	
 	int iMetal;
 	int iHeads;
@@ -28,6 +32,14 @@ enum struct ClassData
 	bool bUbercharging;
 	
 	float flLastSwitch;
+}
+
+enum struct ConditionData
+{
+	TFCond nCond;
+	
+	int iInflictor;
+	float flDuration;
 }
 
 methodmap Player
@@ -54,6 +66,30 @@ methodmap Player
 		public set(float flTime)
 		{
 			g_flLastClassChange[this.iClient] = flTime;
+		}
+	}
+	
+	property float flLastReset
+	{
+		public get()
+		{
+			return g_flLastReset[this.iClient];
+		}
+		public set(float flTime)
+		{
+			g_flLastReset[this.iClient] = flTime;
+		}
+	}
+	
+	property bool bIsChangingClass
+	{
+		public get()
+		{
+			return g_bIsChangingClass[this.iClient];
+		}
+		public set(bool bIsChangingClass)
+		{
+			g_bIsChangingClass[this.iClient] = bIsChangingClass;
 		}
 	}
 	
@@ -108,15 +144,19 @@ methodmap Player
 	public void Reset()
 	{
 		this.flLastClassChange = GetGameTime();
+		this.flLastReset = 0.0;
 		this.bHasChangedClass = false;
 		this.bIsInRespawnRoom = false;
 		this.nBufferedClass = TFClass_Unknown;
+		g_hBufferTimer[this.iClient] = null; // bleh, need to change this sometime
 		
-		this.ResetAllClassData();
+		this.ResetClassData();
 	}
 	
 	public void SetClass(TFClassType nClass)
 	{
+		this.bIsChangingClass = true;
+		
 		// Switching classes while taunting makes players have no active weapon, so stop them
 		TF2_RemoveCondition(this.iClient, TFCond_Taunting);
 		
@@ -154,10 +194,28 @@ methodmap Player
 		
 		// Change classes!
 		TF2_SetPlayerClass(this.iClient, nClass, false, true);
-		TF2_RegeneratePlayer(this.iClient);
+		
+		// Regenerate through VScript because that allows us not to refill health/ammo
+		SetVariantString("self.Regenerate(false)");
+		AcceptEntityInput(this.iClient, "RunScriptCode");
+		
+		// Fix hitboxes
+		SetVariantString("");
+		AcceptEntityInput(this.iClient, "SetCustomModel");
 		
 		// Retrieve ammo, charge meters and the like if we've already played the class we're switching to before
 		this.ApplyClassData(nClass);
+		
+		if (TF2_IsPlayerInCondition(this.iClient, TFCond_MeleeOnly) || TF2_IsPlayerInCondition(this.iClient, TFCond_RestrictToMelee))
+		{
+			int iMelee = GetPlayerWeaponSlot(this.iClient, TFWeaponSlot_Melee);
+			if (iMelee > MaxClients)
+			{
+				char sClassname[64];
+				GetEntityClassname(iMelee, sClassname, sizeof(sClassname));
+				FakeClientCommand(this.iClient, "use %s", sClassname);
+			}
+		}
 		
 		// If switching back to engineer, check if there are any owned-but-not-really buildings and attach them back to the player
 		if (nClass == TFClass_Engineer && g_cvKeepBuildings.BoolValue)
@@ -174,7 +232,7 @@ methodmap Player
 		int iNewMaxHealth = SDKCall_GetMaxHealth(this.iClient);
 		int iFinalHealth;
 		
-		switch(g_cvHealthMode.IntValue)
+		switch (g_cvHealthMode.IntValue)
 		{
 			// Keep the same health
 			case 1: iFinalHealth = iOldHealth;
@@ -189,11 +247,8 @@ methodmap Player
 		// Handle overheal
 		int iMaxAllowedHealth = RoundToCeil(iNewMaxHealth * g_cvHealthMaxOverheal.FloatValue);
 		
-		if (iFinalHealth > iMaxAllowedHealth)
-			iFinalHealth = iMaxAllowedHealth;
-		
 		// Set final health
-		SetEntProp(this.iClient, Prop_Send, "m_iHealth", iFinalHealth);
+		SetEntProp(this.iClient, Prop_Send, "m_iHealth", Min(iFinalHealth, iMaxAllowedHealth));
 		
 		// Remove momentum, if the convar is disabled
 		if (!g_cvKeepMomentum.BoolValue)
@@ -210,20 +265,18 @@ methodmap Player
 		// Update properties
 		this.flLastClassChange = GetGameTime();
 		this.bHasChangedClass = true;
+		this.bIsChangingClass = false;
 	}
 	
 	public void StoreClassData(TFClassType nClass)
 	{
-		if (!g_cvAmmoManagement.BoolValue)
-			return;
-		
 		ClassData data;
 		data.nClass = nClass;
 		
 		// Get client ent props
 		
 		// Class-specific
-		switch(nClass)
+		switch (nClass)
 		{
 			case TFClass_Scout: data.flHype = GetEntPropFloat(this.iClient, Prop_Send, "m_flHypeMeter");
 			case TFClass_DemoMan: data.flChargeMeter = GetEntPropFloat(this.iClient, Prop_Send, "m_flChargeMeter");
@@ -235,7 +288,7 @@ methodmap Player
 		data.iHeads = GetEntProp(this.iClient, Prop_Send, "m_iDecapitations");
 		data.iRevengeCrits = GetEntProp(this.iClient, Prop_Send, "m_iRevengeCrits");
 		data.flRage = GetEntPropFloat(this.iClient, Prop_Send, "m_flRageMeter");
-		data.bRageDraining = view_as<bool>(GetEntProp(this.iClient, Prop_Send, "m_bRageDraining"));
+		data.bRageDraining = GetEntProp(this.iClient, Prop_Send, "m_bRageDraining") != 0;
 		
 		data.flLastSwitch = GetGameTime();
 		
@@ -268,7 +321,7 @@ methodmap Player
 				{
 					if (StrEqual(sClassname, "tf_weapon_particle_cannon") || StrEqual(sClassname, "tf_weapon_drg_pomson"))
 					{
-						data.flWeaponChargeMeter[i] = GetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy");
+						data.flWeaponEnergy[i] = GetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy");
 					}
 					else
 					{
@@ -281,17 +334,21 @@ methodmap Player
 					if (StrEqual(sClassname, "tf_weapon_medigun"))
 					{
 						data.flWeaponChargeMeter[i] = GetEntPropFloat(iWeapon, Prop_Send, "m_flChargeLevel");
-						data.bUbercharging = view_as<bool>(GetEntProp(iWeapon, Prop_Send, "m_bChargeRelease"));
+						data.bUbercharging = !!GetEntProp(iWeapon, Prop_Send, "m_bChargeRelease");
 					}
 					else if (StrEqual(sClassname, "tf_weapon_raygun"))
 					{
-						data.flWeaponChargeMeter[i] = GetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy");
+						data.flWeaponEnergy[i] = GetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy");
 					}
 					else if (StrEqual(sClassname, "tf_weapon_charged_smg"))
 					{
 						data.flWeaponChargeMeter[i] = GetEntPropFloat(iWeapon, Prop_Send, "m_flMinicritCharge");
 					}
-					else if (StrEqual(sClassname, "tf_weapon_rocketpack") || StrEqual(sClassname, "tf_weapon_jar_gas") || StrEqual(sClassname, "tf_weapon_lunchbox") || StrEqual(sClassname, "tf_wearable_razorback"))
+					else if (StrEqual(sClassname, "tf_weapon_rocketpack") || StrEqual(sClassname, "tf_weapon_lunchbox") || StrEqual(sClassname, "tf_wearable_razorback"))
+					{
+						data.flWeaponCooldown[i] = GetEntPropFloat(this.iClient, Prop_Send, "m_flItemChargeMeter", i);
+					}
+					else if (StrEqual(sClassname, "tf_weapon_jar_gas"))
 					{
 						data.flWeaponChargeMeter[i] = GetEntPropFloat(this.iClient, Prop_Send, "m_flItemChargeMeter", i);
 					}
@@ -323,44 +380,59 @@ methodmap Player
 		int iValue = g_aClassData[this.iClient].FindValue(nClass, ClassData::nClass);
 		if (iValue == -1)
 		{
-			g_aClassData[this.iClient].PushArray(data);
+			this.aClassData.PushArray(data);
 		}
 		else
 		{
-			g_aClassData[this.iClient].SetArray(iValue, data);
+			this.aClassData.SetArray(iValue, data);
 		}
 	}
 	
 	public void ApplyClassData(TFClassType nClass)
 	{
-		if (!g_cvAmmoManagement.BoolValue)
-			return;
-		
-		int iValue = g_aClassData[this.iClient].FindValue(nClass, ClassData::nClass);
+		int iValue = this.aClassData.FindValue(nClass, ClassData::nClass);
 		
 		// Haven't played this class yet, set things that would normally transfer over to 0
 		if (iValue == -1)
 		{
-			SetEntProp(this.iClient, Prop_Send, "m_iDecapitations", 0);
-			SetEntProp(this.iClient, Prop_Send, "m_iRevengeCrits", 0);
-			SetEntPropFloat(this.iClient, Prop_Send, "m_flRageMeter", 0.0);
-			SetEntProp(this.iClient, Prop_Send, "m_bRageDraining", false);
-			
+			this.GiveDefaultAmmoForClass(nClass);
 			return;
 		}
 		
 		ClassData data;
-		g_aClassData[this.iClient].GetArray(iValue, data);
+		this.aClassData.GetArray(iValue, data);
 		
 		// Set client ent props
-		SetEntProp(this.iClient, Prop_Send, "m_iAmmo", data.iMetal, _, TF_AMMO_METAL);
 		SetEntProp(this.iClient, Prop_Send, "m_iDecapitations", data.iHeads);
 		SetEntProp(this.iClient, Prop_Send, "m_iRevengeCrits", data.iRevengeCrits);
-		SetEntPropFloat(this.iClient, Prop_Send, "m_flChargeMeter", data.flChargeMeter);
+		
 		SetEntPropFloat(this.iClient, Prop_Send, "m_flRageMeter", data.flRage);
 		SetEntPropFloat(this.iClient, Prop_Send, "m_flHypeMeter", data.flHype);
-		SetEntPropFloat(this.iClient, Prop_Send, "m_flCloakMeter", data.flCloak);
+		
 		SetEntProp(this.iClient, Prop_Send, "m_bRageDraining", data.bRageDraining);
+		
+		if (data.iMetal >= 0)
+			SetEntProp(this.iClient, Prop_Send, "m_iAmmo", data.iMetal, _, TF_AMMO_METAL);
+		
+		if (data.flChargeMeter >= 0.0)
+			SetEntPropFloat(this.iClient, Prop_Send, "m_flChargeMeter", data.flChargeMeter);
+		
+		if (data.flCloak >= 0.0)
+			SetEntPropFloat(this.iClient, Prop_Send, "m_flCloakMeter", data.flCloak);
+		
+		// Deal with ammo
+		for (int iAmmoType = TF_AMMO_DUMMY; iAmmoType < TF_AMMO_COUNT; iAmmoType++)
+		{
+			if (data.iAmmo[iAmmoType] == -1)
+			{
+				SetEntProp(this.iClient, Prop_Send, "m_iAmmo", SDKCall_GetMaxAmmo(this.iClient, iAmmoType), _, iAmmoType);
+			}
+			else
+			{
+				int iExpectedAmmo = Min(data.iAmmo[iAmmoType], SDKCall_GetMaxAmmo(this.iClient, iAmmoType));
+				SetEntProp(this.iClient, Prop_Send, "m_iAmmo", iExpectedAmmo, _, iAmmoType);
+			}
+		}
 		
 		// Deal with weapons
 		for (int i = TFWeaponSlot_Primary; i <= TFWeaponSlot_Melee; i++)
@@ -371,37 +443,28 @@ methodmap Player
 				continue;
 			
 			// Set clip size and ammo
-			if (HasEntProp(iWeapon, Prop_Send, "m_iClip1"))
+			if (data.iClip[i] >= 0 && HasEntProp(iWeapon, Prop_Send, "m_iClip1"))
 			{
 				int iExpectedClip = Min(data.iClip[i], SDKCall_GetMaxClip(iWeapon));
 				SetEntProp(iWeapon, Prop_Send, "m_iClip1", iExpectedClip);
-			}
-			
-			if (HasEntProp(iWeapon, Prop_Send, "m_iPrimaryAmmoType"))
-			{
-				int iAmmoType = GetEntProp(iWeapon, Prop_Send, "m_iPrimaryAmmoType");
-				if (iAmmoType > -1)
-				{
-					int iExpectedAmmo = Min(data.iAmmo[iAmmoType], SDKCall_GetMaxAmmo(this.iClient, iAmmoType));
-					SetEntProp(this.iClient, Prop_Send, "m_iAmmo", iExpectedAmmo, _, iAmmoType);
-				}
 			}
 			
 			char sClassname[32];
 			GetEntityClassname(iWeapon, sClassname, sizeof(sClassname));
 			
 			// Apply weapon-specific charge meters
-			switch(i)
+			switch (i)
 			{
 				case TFWeaponSlot_Primary:
 				{
 					if (StrEqual(sClassname, "tf_weapon_particle_cannon") || StrEqual(sClassname, "tf_weapon_drg_pomson"))
 					{
-						SetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy", Min(data.flWeaponChargeMeter[i], 20.0));
+						if (data.flWeaponEnergy[i] >= 0.0)
+							SetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy", data.flWeaponEnergy[i]);
 					}
 					else
 					{
-						if (data.flWeaponChargeMeter[i] > 0.0)
+						if (data.flWeaponChargeMeter[i] >= 0.0)
 							SetEntPropFloat(this.iClient, Prop_Send, "m_flItemChargeMeter", data.flWeaponChargeMeter[i], i);
 					}
 				}
@@ -415,8 +478,10 @@ methodmap Player
 					}
 					else if (StrEqual(sClassname, "tf_weapon_raygun"))
 					{
-						SetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy", Min(data.flWeaponChargeMeter[i], 20.0));
+						if (data.flWeaponEnergy[i] >= 0.0)
+							SetEntPropFloat(iWeapon, Prop_Send, "m_flEnergy", data.flWeaponEnergy[i]);
 					}
+
 					else if (StrEqual(sClassname, "tf_weapon_charged_smg"))
 					{
 						SetEntPropFloat(iWeapon, Prop_Send, "m_flMinicritCharge", data.flWeaponChargeMeter[i]);
@@ -424,11 +489,17 @@ methodmap Player
 					else if (StrEqual(sClassname, "tf_weapon_lunchbox_drink") || StrEqual(sClassname, "tf_weapon_jar") || StrEqual(sClassname, "tf_weapon_jar_milk") || StrEqual(sClassname, "tf_weapon_cleaver"))
 					{
 						// This apparently refreshes ammo on some weapons that don't use it (which is why the classnames are all hardcoded). cute
-						SetEntPropFloat(iWeapon, Prop_Send, "m_flEffectBarRegenTime", (data.flWeaponChargeTime[i] + GetGameTime()) - data.flLastSwitch);
+						if (data.flWeaponChargeTime[i] >= 0.0)
+							SetEntPropFloat(iWeapon, Prop_Send, "m_flEffectBarRegenTime", (data.flWeaponChargeTime[i] + GetGameTime()) - data.flLastSwitch);
 					}
-					else
+					else if (StrEqual(sClassname, "tf_weapon_rocketpack") || StrEqual(sClassname, "tf_weapon_lunchbox") || StrEqual(sClassname, "tf_wearable_razorback"))
 					{
-						if (data.flWeaponChargeMeter[i] > 0.0)
+						if (data.flWeaponCooldown[i] >= 0.0)
+							SetEntPropFloat(this.iClient, Prop_Send, "m_flItemChargeMeter", data.flWeaponCooldown[i], i);
+					}
+					else if (StrEqual(sClassname, "tf_weapon_jar_gas"))
+					{
+						if (data.flWeaponChargeMeter[i] >= 0.0)
 							SetEntPropFloat(this.iClient, Prop_Send, "m_flItemChargeMeter", data.flWeaponChargeMeter[i], i);
 					}
 				}
@@ -437,26 +508,32 @@ methodmap Player
 				{
 					if (StrEqual(sClassname, "tf_weapon_knife"))
 					{
-						// ??????? i don't fuckin know lol
-						if ((data.flLastSwitch - data.flWeaponChargeTime[i]) < 15.0)
+						if (data.flWeaponChargeTime[i] >= 0.0)
 						{
-							SetEntPropFloat(iWeapon, Prop_Send, "m_flKnifeMeltTimestamp", GetGameTime());
-							SetEntPropFloat(iWeapon, Prop_Send, "m_flKnifeRegenerateDuration", 15.0 - (data.flLastSwitch - data.flWeaponChargeTime[i]));
+							const float flDefaultSpycicleRechargeTime = 15.0;
 							
-							data.flWeaponChargeTime[i] = GetGameTime();
-						}
-						else
-						{
-							data.flWeaponChargeTime[i] = GetGameTime() - 15.0;
+							// ??????? i don't fuckin know lol
+							if ((data.flLastSwitch - data.flWeaponChargeTime[i]) < flDefaultSpycicleRechargeTime)
+							{
+								SetEntPropFloat(iWeapon, Prop_Send, "m_flKnifeMeltTimestamp", GetGameTime());
+								SetEntPropFloat(iWeapon, Prop_Send, "m_flKnifeRegenerateDuration", flDefaultSpycicleRechargeTime - (data.flLastSwitch - data.flWeaponChargeTime[i]));
+								
+								data.flWeaponChargeTime[i] = GetGameTime();
+							}
+							else
+							{
+								data.flWeaponChargeTime[i] = GetGameTime() - flDefaultSpycicleRechargeTime;
+							}
 						}
 					}
 					else if (HasEntProp(iWeapon, Prop_Send, "m_flEffectBarRegenTime"))
 					{
-						SetEntPropFloat(iWeapon, Prop_Send, "m_flEffectBarRegenTime", (data.flWeaponChargeTime[i] + GetGameTime()) - data.flLastSwitch);
+						if (data.flWeaponChargeTime[i] >= 0.0)
+							SetEntPropFloat(iWeapon, Prop_Send, "m_flEffectBarRegenTime", (data.flWeaponChargeTime[i] + GetGameTime()) - data.flLastSwitch);
 					}
 					else
 					{
-						if (data.flWeaponChargeMeter[i] > 0.0)
+						if (data.flWeaponChargeMeter[i] >= 0.0)
 							SetEntPropFloat(this.iClient, Prop_Send, "m_flItemChargeMeter", data.flWeaponChargeMeter[i], i);
 					}
 				}
@@ -464,16 +541,72 @@ methodmap Player
 		}
 	}
 	
-	public void ResetAllClassData()
+	public void ResetClassData(bool bOnlyNegative = false)
 	{
-		if (!g_aClassData[this.iClient])
+		if (!this.aClassData)
 		{
-			g_aClassData[this.iClient] = new ArrayList(sizeof(ClassData));
+			this.aClassData = new ArrayList(sizeof(ClassData));
 		}
 		else
 		{
-			g_aClassData[this.iClient].Clear();
+			if (!bOnlyNegative)
+			{
+				this.aClassData.Clear();
+			}
+			else
+			{
+				float flTime = GetGameTime();
+				if (this.flLastReset == flTime)
+					return;
+				
+				this.flLastReset = flTime;
+				
+				ClassData data;
+				int iLength = this.aClassData.Length;
+				
+				for (int i = 0; i < iLength; i++)
+				{
+					this.aClassData.GetArray(i, data);
+					
+					for (int iSlot = TFWeaponSlot_Primary; iSlot <= TFWeaponSlot_Melee; iSlot++)
+					{
+						data.iClip[iSlot] = -1;
+						data.flWeaponCooldown[iSlot] = -1.0;
+						data.flWeaponChargeTime[iSlot] = -1.0;
+						data.flWeaponEnergy[iSlot] = -1.0;
+					}
+					
+					for (int iSlot = TF_AMMO_DUMMY; iSlot < TF_AMMO_COUNT; iSlot++)
+						data.iAmmo[iSlot] = -1;
+					
+					data.iMetal = -1;
+					data.flCloak = -1.0;
+					data.flChargeMeter = -1.0;
+					
+					this.aClassData.SetArray(i, data);
+				}
+			}
 		}
+	}
+	
+	public void GiveDefaultAmmoForClass(TFClassType nClass)
+	{
+		SetEntProp(this.iClient, Prop_Send, "m_iDecapitations", 0);
+		SetEntProp(this.iClient, Prop_Send, "m_iRevengeCrits", 0);
+		SetEntPropFloat(this.iClient, Prop_Send, "m_flRageMeter", 0.0);
+		SetEntProp(this.iClient, Prop_Send, "m_bRageDraining", false);
+		
+		// Class-specific
+		switch (nClass)
+		{
+			case TFClass_Scout: SetEntPropFloat(this.iClient, Prop_Send, "m_flHypeMeter", 0.0);
+			case TFClass_DemoMan: SetEntPropFloat(this.iClient, Prop_Send, "m_flChargeMeter", 100.0);
+			case TFClass_Engineer: SetEntProp(this.iClient, Prop_Send, "m_iAmmo", 200, _, TF_AMMO_METAL);
+			case TFClass_Spy: SetEntPropFloat(this.iClient, Prop_Send, "m_flCloakMeter", 100.0);
+		}
+		
+		for (int i = TF_AMMO_DUMMY; i < TF_AMMO_COUNT; i++)
+			SetEntProp(this.iClient, Prop_Send, "m_iAmmo", SDKCall_GetMaxAmmo(this.iClient, i), _, i);
 	}
 	
 	public bool IsInCooldown(bool bDisplayText = false)
@@ -529,18 +662,11 @@ methodmap Player
 	
 	public bool CanTeamChangeClass()
 	{
-		// Checking for the only-allow-team convar
-		TFTeam nTeam = TF2_GetClientTeam(this.iClient);
-		
-		if (g_nTeamThatIsAllowedToChangeClass <= TFTeam_Spectator || g_nTeamThatIsAllowedToChangeClass == nTeam)
-			return true;
-		
-		return false;
+		return (g_nTeamThatIsAllowedToChangeClass <= TFTeam_Spectator || g_nTeamThatIsAllowedToChangeClass == TF2_GetClientTeam(this.iClient));
 	}
 	
 	public void Destroy()
 	{
-		// Free up memory space
 		delete g_aClassData[this.iClient];
 		
 		// Destroy all buildings

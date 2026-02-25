@@ -4,21 +4,17 @@
 #include <tf2>
 #include <tf2_stocks>
 #include <morecolors>
-#include <sendproxy>
 
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION	"0.4"
+#define PLUGIN_VERSION	"0.5"
 
 bool g_bArenaMode;
-
 Handle g_hBufferTimer[MAXPLAYERS + 1];
-Handle g_hArenaCountdownTimer;
-
 TFTeam g_nTeamThatIsAllowedToChangeClass;
 
-char g_sClassNames[view_as<int>(TFClass_Engineer) + 1][] = {
+char g_sClassNames[][] = {
 	"random",
 	"scout",
 	"sniper",
@@ -52,9 +48,7 @@ ConVar g_cvKeepBuildings;
 ConVar g_cvKeepMomentum;
 ConVar g_cvHealthMode;
 ConVar g_cvHealthMaxOverheal;
-ConVar g_cvAmmoManagement;
 ConVar g_cvPreventSwitchingDuringBadStates;
-ConVar g_cvMessWithArenaRoundStates;
 
 #include "ccotg/console.sp"
 #include "ccotg/convars.sp"
@@ -137,14 +131,9 @@ public void Enable()
 
 public void Map_Enable()
 {
-	// Check if it's arena
 	if (FindEntityByClassname(-1, "tf_logic_arena") > MaxClients)
 	{
 		g_bArenaMode = true;
-		
-		// Hook arena-related stuff
-		SendProxy_HookGameRules("m_iRoundState", Prop_Int, SendProxy_ArenaRoundState);
-		HookEntityOutput("tf_logic_arena", "OnCapEnabled", EntityOutput_OnArenaCapEnabled);
 		
 		// We don't care about spawn rooms if it's arena so we stop here
 		return;
@@ -166,11 +155,6 @@ public void Map_Enable()
 
 public void Disable()
 {
-	// Unhook arena-related stuff
-	SendProxy_UnhookGameRules("m_iRoundState", SendProxy_ArenaRoundState);
-	UnhookEntityOutput("tf_logic_arena", "OnCapEnabled", EntityOutput_OnArenaCapEnabled);
-	
-	// Treat in-game clients as if they're disconnecting (frees up memory space)
 	for (int iClient = 1; iClient <= MaxClients; iClient++)
 	{
 		if (IsClientInGame(iClient))
@@ -178,8 +162,6 @@ public void Disable()
 	}
 	
 	int iEntity = MaxClients + 1;
-	
-	// Unhook spawn rooms
 	while ((iEntity = FindEntityByClassname(iEntity, "func_respawnroom")) > MaxClients)
 	{
 		SDKUnhook(iEntity, SDKHook_StartTouch, SDKHook_FuncRespawnRoom_StartTouch);
@@ -199,14 +181,15 @@ public void OnEntityCreated(int iEntity, const char[] sClassname)
 	}
 }
 
-public Action Timer_DealWithBuffer(Handle hTimer, int iClient)
+public Action Timer_DealWithBuffer(Handle hTimer, int iSerial)
 {
-	if (hTimer != g_hBufferTimer[iClient] || !g_cvEnabled.BoolValue)
-		return Plugin_Continue;
-	
+	int iClient = GetClientFromSerial(iSerial);
 	if (!IsValidClient(iClient))
-		return Plugin_Continue;
-		
+		return Plugin_Stop;
+	
+	if (hTimer != g_hBufferTimer[iClient] || !g_cvEnabled.BoolValue)
+		return Plugin_Stop;
+	
 	TFClassType nClass = Player(iClient).nBufferedClass;
 	
 	// If the player has selected the class they already are, or their buffered class has already been reset, abort
@@ -215,7 +198,7 @@ public Action Timer_DealWithBuffer(Handle hTimer, int iClient)
 		CPrintToChat(iClient, "%t", "ChangeClass_Wait_Cancelled");
 		Player(iClient).nBufferedClass = TFClass_Unknown;
 		
-		return Plugin_Continue;
+		return Plugin_Stop;
 	}
 	
 	// If the player is no longer alive, give them whatever they had chosen as their desired class and reset their buffer
@@ -224,72 +207,20 @@ public Action Timer_DealWithBuffer(Handle hTimer, int iClient)
 		SetEntProp(iClient, Prop_Send, "m_iDesiredPlayerClass", view_as<int>(nClass));
 		Player(iClient).nBufferedClass = TFClass_Unknown;
 		
-		return Plugin_Continue;
+		return Plugin_Stop;
 	}
 	
 	// If the player is still on cooldown, keep doing this
 	if (Player(iClient).IsInCooldown(false))
-	{
-		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, iClient);
 		return Plugin_Continue;
-	}
 	
 	// If the player is still in a bad state, keep doing this
 	if (Player(iClient).IsInBadState(false))
-	{
-		g_hBufferTimer[iClient] = CreateTimer(0.1, Timer_DealWithBuffer, iClient);
 		return Plugin_Continue;
-	}
 	
 	// If we're through, they should be clear to change classes
 	Player(iClient).SetClass(nClass);
 	Player(iClient).nBufferedClass = TFClass_Unknown;
 	
-	return Plugin_Continue;
-}
-
-public Action EntityOutput_OnArenaCapEnabled(const char[] sOutput, int iCaller, int iActivator, float flDelay)
-{
-	if (!g_cvEnabled.BoolValue)
-		return Plugin_Continue;
-	
-	if (!g_bArenaMode || !g_cvMessWithArenaRoundStates.BoolValue)
-		return Plugin_Continue;
-	
-	// If players think they're not in the 'main' arena round state, a couple of issues happen with the control point 
-	// We mitigate them here!
-	
-	// Unlock the control point(s?) by ourselves, so the players get the memo (if your map or gamemode is weird then I am so so sorry)
-	// nvm can't find anything that works so far lol, it still works it just looks fucked up
-	/*
-	int iEntity = FindEntityByClassname(-1, "tf_logic_arena");
-	if (iEntity > MaxClients)
-	{
-		GameRules_SetPropFloat("m_flCapturePointEnableTime", 0.0);
-		//PrintToChatAll("%d", DispatchKeyValueFloat(iEntity, "CapEnableDelay", 0.0));
-	}
-	*/
-	
-	// Play a 'control point enabled' administrator voiceline
-	EmitGameSoundToAll("Announcer.AM_CapEnabledRandom");
-	
-	return Plugin_Continue;
-}
-
-public Action SendProxy_ArenaRoundState(const char[] sPropName, int &iValue, int iElement)
-{
-	if (!g_cvEnabled.BoolValue)
-		return Plugin_Continue;
-	
-	if (!g_bArenaMode || !g_cvMessWithArenaRoundStates.BoolValue)
-		return Plugin_Continue;
-	
-	// Fool people into thinking the round is in an unused state so they can press comma to switch classes in arena
-	if (iValue == view_as<int>(RoundState_Stalemate))
-	{
-		iValue = view_as<int>(RoundState_RoundRunning);
-		return Plugin_Changed;
-	}
-	
-	return Plugin_Continue;
+	return Plugin_Stop;
 }
