@@ -5,7 +5,6 @@
 #include <tf2_stocks>
 #include <tf2utils>
 #include <morecolors>
-#include <sendproxy>
 
 #pragma semicolon 1
 #pragma newdecls required
@@ -13,10 +12,7 @@
 #define PLUGIN_VERSION	"0.5"
 
 bool g_bArenaMode;
-
 Handle g_hBufferTimer[MAXPLAYERS + 1];
-Handle g_hArenaCountdownTimer;
-
 TFTeam g_nTeamThatIsAllowedToChangeClass;
 
 char g_sClassNames[view_as<int>(TFClass_Engineer) + 1][] = {
@@ -55,7 +51,6 @@ ConVar g_cvHealthMode;
 ConVar g_cvHealthMaxOverheal;
 ConVar g_cvAmmoManagement;
 ConVar g_cvPreventSwitchingDuringBadStates;
-ConVar g_cvMessWithArenaRoundStates;
 
 #include "ccotg/console.sp"
 #include "ccotg/convars.sp"
@@ -142,9 +137,6 @@ public void Map_Enable()
 	{
 		g_bArenaMode = true;
 		
-		SendProxy_HookGameRules("m_iRoundState", Prop_Int, SendProxy_ArenaRoundState);
-		HookEntityOutput("tf_logic_arena", "OnCapEnabled", EntityOutput_OnArenaCapEnabled);
-		
 		// We don't care about spawn rooms if it's arena so we stop here
 		return;
 	}
@@ -165,9 +157,6 @@ public void Map_Enable()
 
 public void Disable()
 {
-	SendProxy_UnhookGameRules("m_iRoundState", SendProxy_ArenaRoundState);
-	UnhookEntityOutput("tf_logic_arena", "OnCapEnabled", EntityOutput_OnArenaCapEnabled);
-	
 	for (int iClient = 1; iClient <= MaxClients; iClient++)
 	{
 		if (IsClientInGame(iClient))
@@ -236,35 +225,4 @@ public Action Timer_DealWithBuffer(Handle hTimer, int iSerial)
 	Player(iClient).nBufferedClass = TFClass_Unknown;
 	
 	return Plugin_Stop;
-}
-
-public Action EntityOutput_OnArenaCapEnabled(const char[] sOutput, int iCaller, int iActivator, float flDelay)
-{
-	if (!g_cvEnabled.BoolValue)
-		return Plugin_Continue;
-	
-	if (!g_bArenaMode || !g_cvMessWithArenaRoundStates.BoolValue)
-		return Plugin_Continue;
-	
-	EmitGameSoundToAll("Announcer.AM_CapEnabledRandom");
-	
-	return Plugin_Continue;
-}
-
-public Action SendProxy_ArenaRoundState(const char[] sPropName, int &iValue, int iElement, int iClient)
-{
-	if (!g_cvEnabled.BoolValue)
-		return Plugin_Continue;
-	
-	if (!g_bArenaMode || !g_cvMessWithArenaRoundStates.BoolValue)
-		return Plugin_Continue;
-	
-	// Fool people into thinking the round is in an unused state so they can press comma to switch classes in arena
-	if (iValue == view_as<int>(RoundState_Stalemate))
-	{
-		iValue = view_as<int>(RoundState_RoundRunning);
-		return Plugin_Changed;
-	}
-	
-	return Plugin_Continue;
 }

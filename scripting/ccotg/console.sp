@@ -13,13 +13,13 @@ public Action CommandListener_ChangeClass(int iClient, const char[] sCommand, in
 	if (!g_cvEnabled.BoolValue)
 		return Plugin_Continue;
 	
-	if (!g_bArenaMode || g_cvMessWithArenaRoundStates.BoolValue)
+	if (!g_bArenaMode)
 		return Plugin_Continue;
 	
 	if (!IsValidClient(iClient) || !IsPlayerAlive(iClient))
 		return Plugin_Continue;
 	
-	// This is the fallback in case the convar for messing with round states is disabled. Players will need to press the dropitem keybind to change classes instead
+	// Players will need to press the dropitem keybind to change classes in arena mode, since they can't bring up the change class menu (and it's clientside)
 	char sVGUIMenu[16];
 	TFTeam nTeam = TF2_GetClientTeam(iClient);
 	
