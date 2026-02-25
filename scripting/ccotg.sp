@@ -3,7 +3,6 @@
 #include <sdkhooks>
 #include <tf2>
 #include <tf2_stocks>
-#include <tf2utils>
 #include <morecolors>
 
 #pragma semicolon 1
@@ -15,7 +14,7 @@ bool g_bArenaMode;
 Handle g_hBufferTimer[MAXPLAYERS + 1];
 TFTeam g_nTeamThatIsAllowedToChangeClass;
 
-char g_sClassNames[view_as<int>(TFClass_Engineer) + 1][] = {
+char g_sClassNames[][] = {
 	"random",
 	"scout",
 	"sniper",

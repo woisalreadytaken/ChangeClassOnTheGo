@@ -192,87 +192,29 @@ methodmap Player
 		// Store ammo, charge meters and the like
 		this.StoreClassData(nCurrentClass);
 		
-		// Store ongoing (temporary) condition data
-		ArrayList aConditions = new ArrayList(sizeof(ConditionData));
-		
-		for (TFCond nCond = TFCond_Slowed; nCond <= TF2Util_GetLastCondition(); nCond++)
-		{
-			int iInflictor = TF2Util_GetPlayerConditionProvider(this.iClient, nCond);
-			float flDuration;
-			
-			switch (nCond)
-			{
-				case TFCond_OnFire, TFCond_BurningPyro:
-				{
-					flDuration = TF2Util_GetPlayerBurnDuration(this.iClient);
-				}
-				
-				case TFCond_Bleeding:
-				{
-					int iBleedCount = TF2Util_GetPlayerActiveBleedCount(this.iClient);
-					if (iBleedCount > 0)
-					{
-						iInflictor = TF2Util_GetPlayerBleedAttacker(this.iClient, iBleedCount - 1);
-						flDuration = TF2Util_GetPlayerBleedDuration(this.iClient, iBleedCount - 1);
-					}
-				}
-				
-				default:
-				{
-					flDuration = TF2Util_GetPlayerConditionDuration(this.iClient, nCond);
-				}
-			}
-			
-			if (flDuration > 0.0)
-			{
-				ConditionData data;
-				data.nCond = nCond;
-				data.iInflictor = iInflictor;
-				data.flDuration = flDuration;
-				aConditions.PushArray(data);
-			}
-		}
-		
 		// Change classes!
 		TF2_SetPlayerClass(this.iClient, nClass, false, true);
-		TF2_RegeneratePlayer(this.iClient);
+		
+		// Regenerate through VScript because that allows us not to refill health/ammo
+		SetVariantString("self.Regenerate(false)");
+		AcceptEntityInput(this.iClient, "RunScriptCode");
+		
+		// Fix hitboxes
 		SetVariantString("");
 		AcceptEntityInput(this.iClient, "SetCustomModel");
 		
 		// Retrieve ammo, charge meters and the like if we've already played the class we're switching to before
 		this.ApplyClassData(nClass);
 		
-		// Give conditions back
-		for (int i = 0; i < aConditions.Length; i++)
-		{
-			ConditionData data;
-			aConditions.GetArray(i, data);
-			
-			TF2_AddCondition(this.iClient, data.nCond, data.flDuration, data.iInflictor);
-			
-			switch (data.nCond)
-			{
-				case TFCond_OnFire, TFCond_BurningPyro:
-				{
-					if (data.iInflictor > 0)
-						TF2Util_IgnitePlayer(this.iClient, data.iInflictor, data.flDuration);
-				}
-				
-				case TFCond_Bleeding:
-				{
-					if (data.iInflictor > 0)
-						TF2Util_MakePlayerBleed(this.iClient, data.iInflictor, data.flDuration);
-				}
-			}
-		}
-		
-		delete aConditions;
-		
 		if (TF2_IsPlayerInCondition(this.iClient, TFCond_MeleeOnly) || TF2_IsPlayerInCondition(this.iClient, TFCond_RestrictToMelee))
 		{
 			int iMelee = GetPlayerWeaponSlot(this.iClient, TFWeaponSlot_Melee);
 			if (iMelee > MaxClients)
-				TF2Util_SetPlayerActiveWeapon(this.iClient, iMelee);
+			{
+				char sClassname[64];
+				GetEntityClassname(iMelee, sClassname, sizeof(sClassname));
+				FakeClientCommand(this.iClient, "use %s", sClassname);
+			}
 		}
 		
 		// If switching back to engineer, check if there are any owned-but-not-really buildings and attach them back to the player
@@ -349,7 +291,7 @@ methodmap Player
 		data.iHeads = GetEntProp(this.iClient, Prop_Send, "m_iDecapitations");
 		data.iRevengeCrits = GetEntProp(this.iClient, Prop_Send, "m_iRevengeCrits");
 		data.flRage = GetEntPropFloat(this.iClient, Prop_Send, "m_flRageMeter");
-		data.bRageDraining = !!GetEntProp(this.iClient, Prop_Send, "m_bRageDraining");
+		data.bRageDraining = GetEntProp(this.iClient, Prop_Send, "m_bRageDraining") != 0;
 		
 		data.flLastSwitch = GetGameTime();
 		
@@ -441,11 +383,11 @@ methodmap Player
 		int iValue = g_aClassData[this.iClient].FindValue(nClass, ClassData::nClass);
 		if (iValue == -1)
 		{
-			g_aClassData[this.iClient].PushArray(data);
+			this.aClassData.PushArray(data);
 		}
 		else
 		{
-			g_aClassData[this.iClient].SetArray(iValue, data);
+			this.aClassData.SetArray(iValue, data);
 		}
 	}
 	
@@ -454,21 +396,17 @@ methodmap Player
 		if (!g_cvAmmoManagement.BoolValue)
 			return;
 		
-		int iValue = g_aClassData[this.iClient].FindValue(nClass, ClassData::nClass);
+		int iValue = this.aClassData.FindValue(nClass, ClassData::nClass);
 		
 		// Haven't played this class yet, set things that would normally transfer over to 0
 		if (iValue == -1)
 		{
-			SetEntProp(this.iClient, Prop_Send, "m_iDecapitations", 0);
-			SetEntProp(this.iClient, Prop_Send, "m_iRevengeCrits", 0);
-			SetEntPropFloat(this.iClient, Prop_Send, "m_flRageMeter", 0.0);
-			SetEntProp(this.iClient, Prop_Send, "m_bRageDraining", false);
-			
+			this.GiveDefaultAmmoForClass(nClass);
 			return;
 		}
 		
 		ClassData data;
-		g_aClassData[this.iClient].GetArray(iValue, data);
+		this.aClassData.GetArray(iValue, data);
 		
 		// Set client ent props
 		SetEntProp(this.iClient, Prop_Send, "m_iDecapitations", data.iHeads);
@@ -608,23 +546,24 @@ methodmap Player
 	
 	public void ResetClassData(bool bOnlyNegative = false)
 	{
-		float flTime = GetGameTime();
-		
 		if (!this.aClassData)
 		{
 			this.aClassData = new ArrayList(sizeof(ClassData));
 		}
 		else
 		{
-			if (this.flLastReset == flTime)
-				return;
-			
 			if (!bOnlyNegative)
 			{
 				this.aClassData.Clear();
 			}
 			else
 			{
+				float flTime = GetGameTime();
+				if (this.flLastReset == flTime)
+					return;
+				
+				this.flLastReset = flTime;
+				
 				ClassData data;
 				int iLength = this.aClassData.Length;
 				
@@ -651,8 +590,26 @@ methodmap Player
 				}
 			}
 		}
+	}
+	
+	public void GiveDefaultAmmoForClass(TFClassType nClass)
+	{
+		SetEntProp(this.iClient, Prop_Send, "m_iDecapitations", 0);
+		SetEntProp(this.iClient, Prop_Send, "m_iRevengeCrits", 0);
+		SetEntPropFloat(this.iClient, Prop_Send, "m_flRageMeter", 0.0);
+		SetEntProp(this.iClient, Prop_Send, "m_bRageDraining", false);
 		
-		this.flLastReset = flTime;
+		// Class-specific
+		switch (nClass)
+		{
+			case TFClass_Scout: SetEntPropFloat(this.iClient, Prop_Send, "m_flHypeMeter", 0.0);
+			case TFClass_DemoMan: SetEntPropFloat(this.iClient, Prop_Send, "m_flChargeMeter", 100.0);
+			case TFClass_Engineer: SetEntProp(this.iClient, Prop_Send, "m_iAmmo", 200, _, TF_AMMO_METAL);
+			case TFClass_Spy: SetEntPropFloat(this.iClient, Prop_Send, "m_flCloakMeter", 100.0);
+		}
+		
+		for (int i = TF_AMMO_DUMMY; i < TF_AMMO_COUNT; i++)
+			SetEntProp(this.iClient, Prop_Send, "m_iAmmo", SDKCall_GetMaxAmmo(this.iClient, i), _, i);
 	}
 	
 	public bool IsInCooldown(bool bDisplayText = false)
