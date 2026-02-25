@@ -45,6 +45,22 @@ public Action CommandListener_JoinClass(int iClient, const char[] sCommand, int 
 	if (!IsValidClient(iClient) || !IsPlayerAlive(iClient))
 		return Plugin_Continue;
 	
+	if (Player(iClient).bIsInRespawnRoom)
+	{
+		// Detach buildings from the engineers so they don't lose them
+		if (TF2_GetPlayerClass(iClient) == TFClass_Engineer && g_cvKeepBuildings.BoolValue)
+		{
+			int iBuilding = MaxClients + 1;
+			while ((iBuilding = FindEntityByClassname(iBuilding, "obj_*")) > MaxClients)
+			{
+				if (GetEntPropEnt(iBuilding, Prop_Send, "m_hBuilder") == iClient)
+					SDKCall_RemoveObject(iClient, iBuilding);
+			}
+		}
+		
+		return Plugin_Continue;
+	}
+	
 	if (GameRules_GetRoundState() == RoundState_Preround)
 		return Plugin_Continue;
 	
