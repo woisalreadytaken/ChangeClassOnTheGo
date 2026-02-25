@@ -420,6 +420,19 @@ methodmap Player
 		if (data.flCloak >= 0.0)
 			SetEntPropFloat(this.iClient, Prop_Send, "m_flCloakMeter", data.flCloak);
 		
+		// Deal with ammo
+		for (int iAmmoType = TF_AMMO_DUMMY; iAmmoType < TF_AMMO_COUNT; iAmmoType++)
+		{
+			if (data.iAmmo[iAmmoType] == -1)
+			{
+				SetEntProp(this.iClient, Prop_Send, "m_iAmmo", SDKCall_GetMaxAmmo(this.iClient, iAmmoType), _, iAmmoType);
+			}
+			else
+			{
+				int iExpectedAmmo = Min(data.iAmmo[iAmmoType], SDKCall_GetMaxAmmo(this.iClient, iAmmoType));
+				SetEntProp(this.iClient, Prop_Send, "m_iAmmo", iExpectedAmmo, _, iAmmoType);
+			}
+		}
 		
 		// Deal with weapons
 		for (int i = TFWeaponSlot_Primary; i <= TFWeaponSlot_Melee; i++)
@@ -434,16 +447,6 @@ methodmap Player
 			{
 				int iExpectedClip = Min(data.iClip[i], SDKCall_GetMaxClip(iWeapon));
 				SetEntProp(iWeapon, Prop_Send, "m_iClip1", iExpectedClip);
-			}
-			
-			if (HasEntProp(iWeapon, Prop_Send, "m_iPrimaryAmmoType"))
-			{
-				int iAmmoType = GetEntProp(iWeapon, Prop_Send, "m_iPrimaryAmmoType");
-				if (iAmmoType > -1 && data.iAmmo[iAmmoType] >= 0)
-				{
-					int iExpectedAmmo = Min(data.iAmmo[iAmmoType], SDKCall_GetMaxAmmo(this.iClient, iAmmoType));
-					SetEntProp(this.iClient, Prop_Send, "m_iAmmo", iExpectedAmmo, _, iAmmoType);
-				}
 			}
 			
 			char sClassname[32];
